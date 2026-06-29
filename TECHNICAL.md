@@ -55,17 +55,20 @@ graph TD
 │       ├── DailyDigest.jsx     # Card bai bao, highlight abstract, modal PDF, sidebar RAG Chat
 │       ├── ScholarMap.jsx      # Science Map ve bang Canvas 2D, zoom nac, Active Learning
 │       ├── Collections.jsx     # Tim kiem prefix-match, quan ly thu muc va goi y centroid
-│       └── ConferencePlanner.jsx # Xep hang phien poster, lich trinh ca nhan
+│       ├── ConferencePlanner.jsx # Xep hang phien poster, lich trinh ca nhan
+│       └── ResearchWorkspace.jsx # Giao dien tab lam viec Multi-Agent quan sat log thoi gian thuc
 └── backend/                    # Ma nguon Python Backend
     ├── Dockerfile              # Docker build cho Flask Backend
     ├── app.py                  # API endpoints, dinh tuyen cac truy van phuc vu he thong
     ├── data_loader.py          # Tai arXiv XML, regex highlights, TF-IDF, t-SNE reduction
     ├── recommender.py          # Custom weighted Logistic Regression model
     ├── llm_helper.py           # Ket noi Gemini API, bo tru van embedding va heuristics
-    ├── requirements.txt        # Thu vien Python (flask, flask-cors, numpy, scikit-learn, pypdf)
+    ├── agent_orchestrator.py   # Do thi trang thai LangGraph Multi-Agent, search, critic, synthesizer
+    ├── requirements.txt        # Thu vien Python (flask, flask-cors, numpy, scikit-learn, pypdf, langgraph)
     ├── test_recommender.py     # Kich ban test toan hoc he thong de xuat
     ├── test_llm.py             # Kich ban test goi y trich loc heuristics/Gemini
     ├── test_rag.py             # Kich ban test engine phan doan cat chunk RAG PDF
+    ├── test_agents.py          # Kich ban test he thong Multi-Agent LangGraph
     └── pdf_cache/              # Thu muc cache van ban PDF tu arXiv phuc vu RAG
 ```
 
@@ -216,6 +219,32 @@ Thuc hien truy van RAG hoi dap tren PDF.
     }
     ```
 
+### 5.5 POST /api/agent/chat
+Kich hoat do thi tac tu LangGraph de lam Literature Review.
+*   **Request JSON Schema**:
+    ```json
+    {
+      "query": "Sequential dexterity and pretrained policies",
+      "api_key": "YOUR_GEMINI_API_KEY_OPTIONAL"
+    }
+    ```
+*   **Response JSON Schema**:
+    ```json
+    {
+      "report": "# Literature Review: Sequential dexterity...\n## 1. Introduction...",
+      "logs": [
+        {
+          "agent": "ArxivSearchAgent",
+          "message": "Analyzing query keywords..."
+        },
+        {
+          "agent": "PaperCriticAgent",
+          "message": "Analyzing methodology..."
+        }
+      ]
+    }
+    ```
+
 ---
 
 ## 6. Co che Hoat dong cua Frontend React
@@ -233,3 +262,8 @@ Thuc hien truy van RAG hoi dap tren PDF.
 De dam bao tinh nang tim kiem hoat dong on dinh ca khi mang cham hoac mat ket noi, phan mem thiet lap tu duy ngu canh check prefix-match thong qua Regex ranh gioi tu.
 *   Tu khoa query duoc tach chu: `queryWords = query.toLowerCase().split(' ').filter(Boolean)`.
 *   Bieu thuc chinh quy duoc bien so: `new RegExp('\\b' + escapedWord)`. Giup loai tru cac ket qua khop tu con khong mong muon (vi du: go `"ch"` se khong map pham vi tu `"technology"`).
+
+### 6.3 Giao dien Tab AI Research Workspace (`ResearchWorkspace.jsx`)
+*   Giao dien giup nguoi dung truc tiep tuong tac va quan sat hanh vi suy nghi, ra quyet dinh cua he thong Multi-Agent:
+    - **Panel giam sat log (Agent Execution Monitor)**: Hien thi tung message log duoc day ra tu truong `logs` cua LangGraph phuc vu tinh minh bach.
+    - **Khung preview Literature Review**: Trinh bay truc tiep bao cao Markdown, di kem mot nut copy nhanh vao clipboard de viet lach khoa hoc.

@@ -562,6 +562,26 @@ def get_conference_planner():
         "sessions": ranked_sessions
     })
 
+@app.route("/api/agent/chat", methods=["POST"])
+def agent_chat():
+    data = request.json
+    query = data.get("query", "")
+    api_key = data.get("api_key", None)
+    
+    if not query.strip():
+        return jsonify({"error": "Query cannot be empty"}), 400
+        
+    try:
+        from agent_orchestrator import run_agent_workflow
+        output = run_agent_workflow(query, api_key)
+        return jsonify({
+            "report": output.get("final_report", ""),
+            "logs": output.get("agent_logs", [])
+        })
+    except Exception as e:
+        print(f"Error running agent workflow: {e}")
+        return jsonify({"error": f"Failed to execute Multi-Agent workflow: {e}"}), 500
+
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)

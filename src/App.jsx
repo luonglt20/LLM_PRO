@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Compass, Folder, Calendar, Sparkles, AlertTriangle, Key } from 'lucide-react';
+import { Mail, Compass, Folder, Calendar, Sparkles, AlertTriangle, Key, Brain } from 'lucide-react';
 import DailyDigest from './components/DailyDigest';
 import ScholarMap from './components/ScholarMap';
 import Collections from './components/Collections';
 import ConferencePlanner from './components/ConferencePlanner';
+import ResearchWorkspace from './components/ResearchWorkspace';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('digest'); // digest, map, collections, planner
@@ -176,6 +177,12 @@ export default function App() {
           >
             <Calendar size={16} /> Conference Planner
           </button>
+          <button 
+            className={`nav-tab ${activeTab === 'workspace' ? 'active' : ''}`}
+            onClick={() => setActiveTab('workspace')}
+          >
+            <Brain size={16} /> AI Workspace
+          </button>
         </nav>
 
         {/* Dynamic API Key Input field */}
@@ -281,6 +288,12 @@ export default function App() {
               <ConferencePlanner 
                 ratings={ratings}
                 allPapers={papers}
+              />
+            )}
+            
+            {activeTab === 'workspace' && (
+              <ResearchWorkspace 
+                apiKey={geminiApiKey}
               />
             )}
           </>
