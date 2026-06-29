@@ -293,6 +293,23 @@ def fetch_arxiv_papers(limit=200):
             
         category_name = ARXIV_CATEGORIES.get(primary_cat, "Machine Learning")
         
+        # Quality Filters: Prune incomplete, stub, or out-of-domain publications
+        if len(abstract) < 350:
+            continue
+        if len(title) < 15:
+            continue
+        if not authors:
+            continue
+        if primary_cat not in ARXIV_CATEGORIES:
+            continue
+            
+        # Academic indicators test: ensure abstract contains robust scientific vocabulary
+        quality_indicators = ["proposed", "method", "results", "model", "performance", "framework", "dataset", "accuracy", "learning", "network", "benchmark"]
+        abstract_lower = abstract.lower()
+        indicator_matches = sum(1 for indicator in quality_indicators if indicator in abstract_lower)
+        if indicator_matches < 3:
+            continue
+            
         highlight = extract_key_sentence(abstract)
         bibtex = generate_bibtex(arxiv_url, title, authors, published)
         figures = generate_mock_figures(title, category_name)
@@ -330,8 +347,8 @@ def load_or_process_papers():
         except Exception as e:
             print(f"Error loading cached papers: {e}. Crawling again...")
 
-    # Fetch fresh papers
-    papers = fetch_arxiv_papers(200)
+    # Fetch fresh papers and filter for quality, keeping up to 400 top papers
+    papers = fetch_arxiv_papers(600)[:400]
     if not papers:
         # Fallback to local mockup list if connection fails
         print("Fallback to local mockup papers...")
