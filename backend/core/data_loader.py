@@ -347,8 +347,8 @@ def load_or_process_papers():
         except Exception as e:
             print(f"Error loading cached papers: {e}. Crawling again...")
 
-    # Fetch fresh papers and filter for quality, keeping up to 400 top papers
-    papers = fetch_arxiv_papers(600)[:400]
+    # Fetch fresh papers and filter for quality, keeping up to 1500 top papers
+    papers = fetch_arxiv_papers(3000)[:1500]
     if not papers:
         # Fallback to local mockup list if connection fails
         print("Fallback to local mockup papers...")
