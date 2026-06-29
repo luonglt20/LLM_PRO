@@ -42,8 +42,6 @@ Hệ thống cung cấp một nền tảng đề xuất bài báo cá nhân hóa
 
 ## Hướng dẫn chạy ứng dụng
 
-Đảm bảo bạn đang ở thư mục làm việc chính: .
-
 ### Cách 1: Chạy bằng Docker (Khuyên dùng)
 Chỉ cần chạy lệnh duy nhất dưới đây (yêu cầu máy có cài Docker Desktop):
 ```bash
