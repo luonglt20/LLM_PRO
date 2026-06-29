@@ -2,10 +2,10 @@ import sys
 import os
 
 # Adjust path to import backend modules
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data_loader import load_or_process_papers
-from recommender import train_recommender
+from core.data_loader import load_or_process_papers
+from core.recommender import train_recommender
 
 def run_tests():
     print("=== Testing Data Loading and Processing ===")

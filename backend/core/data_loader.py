@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.manifold import TSNE
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), "papers.json")
+DATA_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "papers.json")
 
 ARXIV_CATEGORIES = {
     "cs.CV": "Computer Vision",

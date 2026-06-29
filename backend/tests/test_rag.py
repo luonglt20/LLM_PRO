@@ -3,9 +3,9 @@ import os
 import numpy as np
 
 # Adjust path to import backend modules
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from llm_helper import answer_pdf_question
+from core.llm_helper import answer_pdf_question
 
 def test_rag():
     print("=== Testing PDF RAG Engine ===")

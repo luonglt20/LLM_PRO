@@ -2,9 +2,9 @@ import os
 import sys
 
 # Ensure backend directory is in python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_orchestrator import run_agent_workflow
+from core.agent_orchestrator import run_agent_workflow
 
 def test_multi_agent_workflow():
     print("Testing Multi-Agent LangGraph Workflow...")

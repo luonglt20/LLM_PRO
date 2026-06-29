@@ -49,7 +49,7 @@ def search_arxiv_node(state: AgentState) -> Dict[str, Any]:
     })
     
     # Load papers from local database papers.json as our searchable catalog
-    papers_path = os.path.join(os.path.dirname(__file__), "papers.json")
+    papers_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "papers.json")
     matched_papers = []
     
     if os.path.exists(papers_path):
@@ -116,7 +116,7 @@ def critic_papers_node(state: AgentState) -> Dict[str, Any]:
         })
         
         # Check if RAG chunks are cached
-        pdf_cache_dir = os.path.join(os.path.dirname(__file__), "pdf_cache")
+        pdf_cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pdf_cache")
         cache_file = os.path.join(pdf_cache_dir, f"{p['id']}.json")
         summary_text = ""
         

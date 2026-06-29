@@ -2,9 +2,9 @@ import sys
 import os
 
 # Adjust path to import backend modules
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from llm_helper import explain_recommendation
+from core.llm_helper import explain_recommendation
 
 def run_tests():
     print("=== Testing LLM Helper ===")

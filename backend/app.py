@@ -9,15 +9,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from pypdf import PdfReader
 
-from data_loader import load_or_process_papers, DATA_FILE
-from recommender import train_recommender
-from llm_helper import explain_recommendation, answer_pdf_question
+from core.data_loader import load_or_process_papers, DATA_FILE
+from core.recommender import train_recommender
+from core.llm_helper import explain_recommendation, answer_pdf_question
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for frontend integration
 
-RATINGS_FILE = os.path.join(os.path.dirname(__file__), "ratings.json")
-COLLECTIONS_FILE = os.path.join(os.path.dirname(__file__), "collections.json")
+RATINGS_FILE = os.path.join(os.path.dirname(__file__), "data", "ratings.json")
+COLLECTIONS_FILE = os.path.join(os.path.dirname(__file__), "data", "collections.json")
 
 # Global in-memory variables
 papers_db = []
