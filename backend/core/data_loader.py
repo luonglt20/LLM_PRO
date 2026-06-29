@@ -416,9 +416,11 @@ def load_or_process_papers():
     # Fetch fresh papers and filter for quality, keeping up to 1500 top papers
     papers = fetch_arxiv_papers(3000)[:1500]
     
-    # Run Gemini-powered Quality Filter Agent if API key is present
+    # To protect your tokens, AI-powered screening is DISABLED by default.
+    # It will only execute if the environment flag 'ENABLE_CRAWLER_AI' is explicitly set to 'true'.
+    enable_crawler_ai = os.environ.get("ENABLE_CRAWLER_AI", "false").lower() == "true"
     api_key = os.environ.get("GEMINI_API_KEY")
-    if api_key:
+    if enable_crawler_ai and api_key:
         try:
             papers = filter_papers_with_gemini(papers, api_key)
         except Exception as e:
