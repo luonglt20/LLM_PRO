@@ -331,6 +331,72 @@ def fetch_arxiv_papers(limit=200):
         
     return papers
 
+def filter_papers_with_gemini(papers, api_key):
+    """
+    Uses Gemini API to screen papers and reject low-quality, draft, or out-of-domain publications.
+    Processes papers in batches of 25 to optimize latency and api quota.
+    """
+    if not api_key:
+        return papers
+        
+    print(f"Agent Quality Filter: Screening {len(papers)} papers using Gemini...")
+    rejected_ids = set()
+    
+    # To avoid excessive api latency and quota usage, we only filter the top 150 papers
+    # (which are the most recent ones shown on the maps and digest)
+    candidate_limit = 150
+    candidates = papers[:candidate_limit]
+    remaining = papers[candidate_limit:]
+    
+    batch_size = 25
+    for i in range(0, len(candidates), batch_size):
+        batch = candidates[i:i+batch_size]
+        batch_data = [{"id": p["id"], "title": p["title"], "abstract": p["abstract"][:300]} for p in batch]
+        
+        prompt = f"""
+You are a scientific program committee chair. Evaluate the quality of these papers based on their titles and abstracts.
+Identify any paper that is a stub, draft, incomplete, has low academic rigor, or is out of domain (not AI/ML/CV/NLP).
+
+Papers list:
+{json.dumps(batch_data)}
+
+Return a strict JSON list of IDs of the papers that are LOW QUALITY, INCOMPLETE, or OUT-OF-DOMAIN and should be rejected.
+Format your response as a valid JSON list. Do not use markdown blocks or HTML.
+Example: ["id1", "id2"]
+"""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        headers = {"Content-Type": "application/json"}
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=15) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                res_text = res_data['candidates'][0]['content']['parts'][0]['text']
+                rejected = json.loads(res_text.strip())
+                if isinstance(rejected, list):
+                    for rid in rejected:
+                        rejected_ids.add(str(rid))
+        except Exception as e:
+            print(f"Gemini filter batch {i//batch_size} failed: {e}. Skipping batch filtering.")
+            
+    # Filter out rejected papers
+    filtered_candidates = [p for p in candidates if p["id"] not in rejected_ids]
+    print(f"Agent Quality Filter: Screened candidates. Rejected {len(candidates) - len(filtered_candidates)} papers.")
+    
+    return filtered_candidates + remaining
+
 def load_or_process_papers():
     """
     Loads papers from JSON database cache. If not found, crawls arXiv, computes
@@ -349,6 +415,15 @@ def load_or_process_papers():
 
     # Fetch fresh papers and filter for quality, keeping up to 1500 top papers
     papers = fetch_arxiv_papers(3000)[:1500]
+    
+    # Run Gemini-powered Quality Filter Agent if API key is present
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if api_key:
+        try:
+            papers = filter_papers_with_gemini(papers, api_key)
+        except Exception as e:
+            print(f"AI Filter Agent failed: {e}. Falling back to default list.")
+            
     if not papers:
         # Fallback to local mockup list if connection fails
         print("Fallback to local mockup papers...")
