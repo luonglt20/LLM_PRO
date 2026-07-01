@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local documentation files
+AI_TECHNICAL_DOCUMENTATION.md
