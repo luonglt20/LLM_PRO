@@ -165,14 +165,14 @@ def answer_pdf_question_heuristic(chunks, question):
     Local heuristic fallback that displays retrieved snippets from the PDF
     when Gemini API key is offline or unconfigured.
     """
-    ans = "🤖 [Local Index Fallback]\n\n"
-    ans += "Gemini API Key is not set or offline. Here are the top relevant sections matched from the paper PDF:\n\n"
+    ans = "🤖 [Chế độ dự phòng Local]\n\n"
+    ans += "Gemini API Key chưa được cấu hình hoặc đã hết hạn/hết hạn ngạch. Dưới đây là các phần nội dung liên quan nhất được tìm thấy từ tài liệu PDF:\n\n"
     for i, c in enumerate(chunks[:2]):
         cleaned_text = c['text'].replace('\n', ' ').strip()
         score = c.get('score', 0.0)
-        ans += f"📄 **Section {i+1}** (Match score: {score:.2f}):\n"
+        ans += f"📄 **Phần {i+1}** (Điểm tương đồng: {score:.2f}):\n"
         ans += f"\"... {cleaned_text[:350]} ...\"\n\n"
-    ans += "💡 *Tip: Enter your Gemini API Key in the settings menu (🔑 icon at the top-right header) to unlock fully generative, context-aware AI answers!*"
+    ans += "💡 *Mẹo: Hãy nhập Gemini API Key chính xác trong menu cài đặt (biểu tượng 🔑 ở góc trên bên phải) để mở khóa câu trả lời AI đầy đủ và thông minh nhất!*"
     return ans
 
 def answer_pdf_question(chunks, question, api_key):
