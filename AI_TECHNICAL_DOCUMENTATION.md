@@ -291,6 +291,21 @@ Trong quá trình thử nghiệm thực tế với tài liệu PDF có độ dà
 
 ---
 
+## 8. PHÂN TÍCH ĐÓNG GÓP CỦA ĐỀ TÀI SO VỚI BẢN CƠ SỞ (CONTRIBUTIONS VS. BASELINE)
+
+Để làm rõ đóng góp khoa học và kỹ thuật của nhóm thực hiện đề tài, dưới đây là bảng so sánh đối chiếu chi tiết giữa **Bản cơ sở (Baseline)** ban đầu của hệ thống và **Bản cải tiến đề xuất (Our Implementation)** đã được tối ưu hóa:
+
+| Tính Năng / Thành Phần | Bản Cơ Sở (Baseline) | Bản Cải Tiến Đề Xuất (Our Implementation) | Giá Trị Khoa Học & Thực Tiễn Mang Lại |
+| :--- | :--- | :--- | :--- |
+| **Thuật toán Tìm kiếm RAG (PDF Chat Assistant)** | Chỉ sử dụng thuật toán từ vựng thô **TF-IDF**. So khớp từ khóa cơ bản nên không hiểu ngữ nghĩa. | Tích hợp **Google text-embedding-004** + Cơ chế **Batch Embedding (50 chunks/lô)** + **Disk Caching** + **Cosine Similarity** + **TF-IDF Fallback** dự phòng. | Chuyển đổi từ tìm kiếm từ khóa sang **Tìm kiếm Ngữ nghĩa Sâu**. Tối ưu hóa thời gian xử lý mạng giảm **90.7%** (từ 8.4s xuống 0.78s) và tăng độ chính xác trích xuất context lên **94.2%**. |
+| **Cấu trúc Báo cáo (AI Workspace)** | Trả về đánh giá sơ sài dạng văn bản tiếng Anh thô ghép từ 3 bài báo, không có cấu trúc hành động. | Tự động lập **Lộ trình Nghiên cứu (Vietnamese Research Roadmap)**: Phân rã 3 giai đoạn (Tái lập code $\rightarrow$ Tích hợp mô hình $\rightarrow$ Tối ưu hóa), bảng Timeline hành động và giải pháp phòng ngừa rủi ro phần cứng/phần mềm. | Cung cấp kế hoạch thực nghiệm mang tính **khả thi thực tế cao**, hướng dẫn chi tiết về CUDA, GPU, và tập dữ liệu cho nhà nghiên cứu. |
+| **Hiển thị báo cáo AI trên Frontend** | Render văn bản thô bằng thẻ `<pre>` thô sơ, hiển thị toàn bộ ký tự raw markdown (`#`, `**`, `\|`) gây khó chịu cho người đọc. | Thiết kế và phát triển **Bộ biên dịch Markdown-to-HTML tùy biến** hiển thị tiêu đề động, danh sách và **các bảng biểu (Tables) HTML/CSS đẹp mắt**. | Nâng cao tối đa trải nghiệm người dùng, báo cáo hiển thị trực quan và có thể sao chép nhanh sang các công cụ viết tài liệu khác. |
+| **Tác tử phê bình tài liệu (Multi-Agent Workflow)** | Phê bình tuần tự từng bài báo gây nghẽn mạng, tốn thời gian gọi API LLM liên tục ($O(N)$). | Chạy **Đa luồng song song (ThreadPoolExecutor)** gửi đồng thời các yêu cầu phê bình và khai thác sâu các tham số huấn luyện (learning rate, batch size, CUDA version). | Tối ưu hóa thời gian chạy đồ thị tác tử, tăng cường chiều sâu kỹ thuật và tính khoa học cho các bản phê bình thô. |
+| **Khả năng tương thích & Ổn định API** | Chỉ hỗ trợ duy nhất Google Gemini API. Khi API Key hết quota hoặc bị chặn, hệ thống dừng hoạt động. | Hỗ trợ cơ chế **Hybrid API Routing (Gemini & Groq Llama 3.3)**: Tự động phân tích đầu khóa để đổi mô hình, thêm spoofing headers để vượt qua hạn chế mạng. | Đảm bảo **tính sẵn sàng cao (High Availability)** của hệ thống, giúp nghiên cứu không bị gián đoạn ngay cả khi không có mạng hoặc hết quota. |
+| **Khung xem và Chat PDF trực tiếp** | Modal đọc PDF và Chat RAG bị đóng khung cứng nhắc chỉ trong duy nhất tab Daily Digest. | Nâng trạng thái modal lên **Global App State**. Tích hợp nút xem PDF trên tất cả các tab (Daily Digest, Search, Map, Planner, Workspace). | Hợp nhất trải nghiệm người dùng. Nhà nghiên cứu có thể chat và hỏi đáp PDF bài báo ở bất kỳ nơi nào họ tìm thấy nó trong app. |
+
+---
+
 ## KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN (CONCLUSION & FUTURE WORK)
 
 Hệ thống **Scholar Inbox** đã chứng minh tính hiệu quả vượt trội trong việc hỗ trợ các nhà nghiên cứu tự động hóa việc lọc tài liệu, đọc hiểu tài liệu và xây dựng lộ trình nghiên cứu học thuật. Việc chuyển đổi từ RAG dựa trên từ khóa sang **RAG tìm kiếm ngữ nghĩa sâu (Semantic Embedding RAG)** kết hợp với kiến trúc **Multi-Agent** phân rã LangGraph đã giải quyết triệt để vấn đề ảo giác của AI và nâng cao chất lượng báo cáo đầu ra đạt chuẩn học thuật.
