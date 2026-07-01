@@ -107,17 +107,35 @@ $$w_P = n_T \tilde{w}_P, \quad w_N = n_T \tilde{w}_N, \quad w_R = n_T \tilde{w}_
 
 ## 4. Cac Thuat toan Toi uu hoa Nang cao
 
-### 4.1 Thuat toan RAG PDF Phan cap (Parent-Child Chunking)
-*   **Van de**: Cat chu co hoc theo do dai tinh lam gay cac cum tu ky thuat hoac cong thuc.
+### 4.1 Thuat toan RAG PDF Phan cap va Tim kiem Ngu nghia (Hierarchical Neural RAG)
+*   **Van de**: TF-IDF chi so khớp từ khóa thô, dẫn đến việc bỏ lỡ các ngữ cảnh tương đồng về mặt học thuật nhưng khác biệt về cách dùng từ.
 *   **Giai phap**:
-    - **Manh con (Child Chunks - 300 ky tu, overlap 50)**: Dung lam ma tran index tim kiem TF-IDF giup dat do chinh xac cuc bo rat cao khi nguoi dung gui cau hoi.
-    - **Manh cha (Parent Chunks - 1500 ky tu, overlap 300)**: Chua truyen dat va bao quanh manh con tuong ung.
+    - **Phan phoi Chunks phân cấp**:
+        - *Manh con (Child Chunks - 300 ky tu, overlap 50)*: Dùng để tính toán độ tương đồng vector chính xác.
+        - *Manh cha (Parent Chunks - 1500 ky tu, overlap 300)*: Bao quanh mảnh con và được gửi làm ngữ cảnh cho LLM.
+    - **Vector Embedding**: Mã hóa Child Chunks thành các vector 768 chiều bằng mô hình **Google `text-embedding-004`**.
+    - **Tối ưu hóa Batching & Caching**:
+        - Gửi tối đa 50 phân đoạn trong một yêu cầu `batchEmbedContents` duy nhất để tránh nghẽn kết nối mạng.
+        - Lưu trữ (cache) các vector nhúng cùng văn bản phân đoạn vào ổ cứng (`backend/pdf_cache/<paper_id>.json`).
+        - Lần truy vấn sau chỉ cần tải file cache lên RAM và tính toán Cosine Similarity trực tiếp, tránh re-embedding.
+    - **Lexical Fallback**: Hệ thống tự động chuyển sang TF-IDF làm dự phòng khi API Key bị lỗi hoặc hết quota.
 *   **Luong van hanh**:
-    1. So khop cau hoi voi danh sach Child Chunks bang TF-IDF Cosine Similarity.
-    2. Trich ra Top 3 Child Chunks co diem cao nhat.
-    3. Lay ra Parent Chunks tuong ung lam Context gui cho LLM. Giai phap nay giup LLM bao quat tron ven paragraph de suy luan dung.
+    1. Câu hỏi người dùng được nhúng thành vector truy vấn $\mathbf{u}$.
+    2. So khớp vector truy vấn $\mathbf{u}$ với các vector Child Chunks $\mathbf{v}$ trong cache bằng **Cosine Similarity**:
+       $$\text{Cosine Similarity}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}$$
+    3. Lọc ra top 3 Child Chunks có điểm số cao nhất, trích xuất Parent Chunks tương ứng làm ngữ cảnh.
+    4. Trích xuất chỉ số trang (page index) tương ứng từ dữ liệu nguồn để hiển thị trích dẫn trực tiếp trong câu trả lời.
 
-### 4.2 Thuat toan Active Learning Da dang (K-Means Diversity AL)
+### 4.2 Kien truc Do thi Multi-Agent voi LangGraph
+*   **Do thi LangGraph**: Điều phối luồngLiterature Review bằng đồ thị trạng thái tuần tự và song song:
+    - *ArxivSearchAgent*: Khảo sát từ khóa, tính điểm cá nhân hóa dựa trên lịch sử upvotes.
+    - *PaperCriticAgent*: Chạy đa luồng song song (`ThreadPoolExecutor`) phân tích toán học, hyperparameter và hạn chế của các bài báo được chọn.
+    - *LiteratureReviewAgent*: Tổng hợp lộ trình thực nghiệm tiếng Việt (Phased Technical Plan), bảng Timeline và giải pháp rủi ro.
+
+### 4.3 Bo Bien dich Markdown-to-JSX tren Frontend
+*   Frontend xây dựng hàm tự dịch `renderMarkdown` và `parseBoldText` để phân tích văn bản markdown của LLM thành các tiêu đề `<h2>`/`<h3>`/`<h4>`, danh sách bullet, và dựng bảng HTML Table đồng bộ với giao diện Glassmorphism của hệ thống.
+
+### 4.4 Thuat toan Active Learning Da dang (K-Means Diversity AL)
 *   **Van de**: Cac bai bao gan ranh gioi quyet dinh ($w^T x + b \approx 0$) thuong rat giong nhau do nam cung 1 cum chu de, gay lap lai khi hien thi 5 bai khao sat.
 *   **Giai phap**:
     1. Loc ra Top 20 bai bao chua danh gia gan ranh gioi quyet dinh nhat.

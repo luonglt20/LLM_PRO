@@ -11,7 +11,7 @@ Hệ thống cung cấp một nền tảng đề xuất bài báo cá nhân hóa
 1. **Daily Digest (Đề xuất hàng ngày)**:
    - Sắp xếp thứ tự ưu tiên các bài báo theo thang điểm độ liên quan $[-100, 100]$.
    - Tự động tô sáng câu chứa đóng góp/ý tưởng cốt lõi trong abstract để đọc lướt nhanh (Speed-reading highlights).
-   - **View PDF & AI Chat Assistant (RAG)**: Cho phép xem trực tiếp tài liệu PDF arXiv chính thức trong ứng dụng, đi kèm cửa sổ chat trợ lý RAG hỗ trợ liên kết ngữ nghĩa bằng thuật toán **Parent-Child Chunking** phân cấp (truy vấn nhanh trên mảnh Child 300 kí tự và trả ngữ cảnh rộng trên mảnh Parent 1500 kí tự cho AI).
+   - **View PDF & AI Chat Assistant (Neural RAG)**: Cho phép xem trực tiếp tài liệu PDF arXiv chính thức trong ứng dụng, đi kèm cửa sổ chat trợ lý RAG hỗ trợ liên kết ngữ nghĩa bằng thuật toán **Parent-Child Chunking** phân cấp. Tìm kiếm ngữ nghĩa bằng mô hình mật độ cao **Google `text-embedding-004` (768 chiều)** kết hợp **Batching** & **Disk Caching** (TF-IDF cục bộ làm fallback dự phòng).
    - Đề xuất các bài báo tương đồng (Similar papers) bằng cosine similarity thời gian thực.
    - Hỗ trợ xem cấu trúc và sao chép BibTeX tham chiếu chỉ với 1 click.
 
@@ -28,13 +28,19 @@ Hệ thống cung cấp một nền tảng đề xuất bài báo cá nhân hóa
 
 4. **Conference Planner (Lên kế hoạch hội nghị)**:
    - Xếp hạng các phiên báo cáo (Poster Sessions) dựa trên độ liên quan trung bình với sở thích người dùng.
-   - Thêm poster vào thời gian biểu cá nhân được sắp xếp theo trình tự thời gian chi tiết.
+   - Thêm poster vào thời gian biểu cá nhân được sắp xếp theo trình tự thời gian chi tiết, đi kèm liên kết **đọc PDF và hỏi đáp AI RAG nhanh**.
+
+5. **AI Research Workspace (Không gian Nghiên cứu Đa tác tử)**:
+   - **LangGraph Multi-Agent Workflows**: Thiết lập luồng đồ thị tác tử tự động hóa (ArxivSearchAgent $\rightarrow$ PaperCriticAgent chạy đa luồng song song $\rightarrow$ LiteratureReviewAgent).
+   - **Phased Technical Roadmap (Lộ trình Nghiên cứu)**: Tự động lập kế hoạch thực nghiệm bằng tiếng Việt theo 3 giai đoạn (Tái lập baseline $\rightarrow$ Tích hợp module $\rightarrow$ Đánh giá), bảng mốc thời gian (Milestones Timeline) và quản trị rủi ro phần cứng/phần mềm.
+   - **Custom Markdown-to-JSX Compiler**: Biên dịch markdown trực quan trên giao diện, tự động dựng bảng biểu HTML/CSS Glassmorphism động.
+   - **Hybrid API Router (Gemini & Groq)**: Tự định tuyến API Key linh hoạt sang dịch vụ dự phòng để tăng tính sẵn sàng (High Availability).
 
 ---
 
 ## Công nghệ sử dụng
 
-- **Backend**: Python 3.12, Flask, Flask-CORS, NumPy, Scikit-learn (TfidfVectorizer, LogisticRegression, t-SNE).
+- **Backend**: Python 3.12, Flask, Flask-CORS, LangGraph, NumPy, Scikit-learn (TfidfVectorizer, LogisticRegression, t-SNE), Google Gemini API (embed-004), Groq Llama 3.3.
 - **Frontend**: React 19 (Vite), Lucide React, HTML5 Canvas.
 - **Containerization**: Docker, Docker Compose.
 
