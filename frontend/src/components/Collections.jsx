@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Folder, Plus, Trash2, FolderPlus, ThumbsUp, ThumbsDown, Bookmark } from 'lucide-react';
+import { Search, Folder, Plus, Trash2, FolderPlus, ThumbsUp, ThumbsDown, Bookmark, BookOpen } from 'lucide-react';
 
 export default function Collections({ 
   ratings, 
   onRate, 
   allPapers, 
   collections, 
-  onManageCollection 
+  onManageCollection,
+  onViewPdf
 }) {
   const [activeCollection, setActiveCollection] = useState('My Library');
   const [searchQuery, setSearchQuery] = useState('');
@@ -174,6 +175,13 @@ export default function Collections({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
                         <span className="tag category" style={{ fontSize: '11px' }}>{paper.category_name}</span>
                         <button 
+                          className="glass-button-secondary"
+                          style={{ fontSize: '11px', padding: '4px 10px' }}
+                          onClick={() => onViewPdf(paper)}
+                        >
+                          <BookOpen size={12} /> View PDF
+                        </button>
+                        <button 
                           className={`glass-button-secondary ${isBookmarked ? 'active' : ''}`}
                           style={{ fontSize: '11px', padding: '4px 10px' }}
                           onClick={() => onManageCollection(isBookmarked ? 'remove' : 'add', activeCollection, paper.id)}
@@ -211,13 +219,22 @@ export default function Collections({
                           {paper.authors.slice(0, 2).join(', ')} | {paper.category_name}
                         </span>
                       </div>
-                      <button 
-                        className="action-btn"
-                        onClick={() => onManageCollection('remove', activeCollection, paper.id)}
-                        title="Remove from library"
-                      >
-                        <Trash2 size={14} style={{ color: 'var(--score-negative-text)' }} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button 
+                          className="glass-button-secondary"
+                          style={{ fontSize: '11px', padding: '4px 10px' }}
+                          onClick={() => onViewPdf(paper)}
+                        >
+                          <BookOpen size={12} /> View PDF
+                        </button>
+                        <button 
+                          className="action-btn"
+                          onClick={() => onManageCollection('remove', activeCollection, paper.id)}
+                          title="Remove from library"
+                        >
+                          <Trash2 size={14} style={{ color: 'var(--score-negative-text)' }} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -245,13 +262,22 @@ export default function Collections({
                         <h4 style={{ margin: '0 0 4px 0', color: '#fff', fontSize: '14px' }}>{paper.title}</h4>
                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{paper.category_name}</span>
                       </div>
-                      <button 
-                        className="glass-button" 
-                        style={{ padding: '4px 10px', fontSize: '11px' }}
-                        onClick={() => onManageCollection('add', activeCollection, paper.id)}
-                      >
-                        <Plus size={12} /> Add
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button 
+                          className="glass-button-secondary"
+                          style={{ fontSize: '11px', padding: '4px 10px' }}
+                          onClick={() => onViewPdf(paper)}
+                        >
+                          <BookOpen size={12} /> View PDF
+                        </button>
+                        <button 
+                          className="glass-button" 
+                          style={{ padding: '4px 10px', fontSize: '11px' }}
+                          onClick={() => onManageCollection('add', activeCollection, paper.id)}
+                        >
+                          <Plus size={12} /> Add
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

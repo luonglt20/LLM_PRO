@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, BrainCircuit, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, BrainCircuit, ThumbsUp, ThumbsDown, BookOpen } from 'lucide-react';
 
 const CATEGORY_COLORS = {
   "Computer Vision": "#06b6d4",
@@ -9,7 +9,7 @@ const CATEGORY_COLORS = {
   "Other": "#9ca3af"
 };
 
-export default function ScholarMap({ papers, ratings, onRate, activeLearningPapers }) {
+export default function ScholarMap({ papers, ratings, onRate, activeLearningPapers, onViewPdf }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   
@@ -405,9 +405,13 @@ export default function ScholarMap({ papers, ratings, onRate, activeLearningPape
             </p>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="tag category" style={{ fontSize: '11px' }}>
-                {selectedPaper.category_name}
-              </span>
+              <button 
+                className="glass-button-secondary"
+                style={{ fontSize: '11px', padding: '4px 10px' }}
+                onClick={() => onViewPdf(selectedPaper)}
+              >
+                <BookOpen size={12} /> View PDF
+              </button>
               
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
@@ -452,6 +456,14 @@ export default function ScholarMap({ papers, ratings, onRate, activeLearningPape
                   </span>
                   
                   <div className="active-learning-actions">
+                    <button 
+                      className="active-learning-btn"
+                      onClick={() => onViewPdf(paper)}
+                      title="View PDF"
+                      style={{ marginRight: '4px' }}
+                    >
+                      <BookOpen size={12} />
+                    </button>
                     <button 
                       className={`active-learning-btn upvote ${currentRating === 1 ? 'upvoted' : ''}`}
                       onClick={() => onRate(paper.id, currentRating === 1 ? 0 : 1)}

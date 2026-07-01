@@ -11,7 +11,8 @@ export default function DailyDigest({
   onBookmark, 
   bookmarkedIds, 
   allPapers,
-  geminiApiKey
+  geminiApiKey,
+  onViewPdf
 }) {
   const [selectedRange, setSelectedRange] = useState('day');
   const [startDate, setStartDate] = useState('2026-06-01');
@@ -19,61 +20,8 @@ export default function DailyDigest({
   
   // Modals / Drawers State
   const [activeBibtex, setActiveBibtex] = useState(null);
-  const [activeFigures, setActiveFigures] = useState(null);
   const [activeSimilar, setActiveSimilar] = useState(null);
 
-  // PDF RAG Chat States
-  const [chatHistory, setChatHistory] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-
-  useEffect(() => {
-    if (activeFigures) {
-      setChatHistory([
-        {
-          sender: 'ai',
-          text: `Hi! I am your AI assistant for this paper. Ask me anything about the methodology, benchmarks, or results in "${activeFigures.title}".`
-        }
-      ]);
-    } else {
-      setChatHistory([]);
-    }
-    setChatInput('');
-    setChatLoading(false);
-  }, [activeFigures]);
-
-  const handleSendChatMessage = async (e) => {
-    if (e) e.preventDefault();
-    if (!chatInput.trim() || chatLoading) return;
-
-    const userMsg = chatInput.trim();
-    setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
-    setChatInput('');
-    setChatLoading(true);
-
-    try {
-      const response = await fetch('http://127.0.0.1:5001/api/chat-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paper_id: activeFigures.id,
-          question: userMsg,
-          api_key: geminiApiKey
-        })
-      });
-      const data = await response.json();
-      if (data.answer) {
-        setChatHistory(prev => [...prev, { sender: 'ai', text: data.answer }]);
-      } else {
-        setChatHistory(prev => [...prev, { sender: 'ai', text: `Error: ${data.error || 'Failed to process question'}` }]);
-      }
-    } catch (err) {
-      console.error(err);
-      setChatHistory(prev => [...prev, { sender: 'ai', text: 'Error: Failed to connect to server.' }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
   const [similarRecommendations, setSimilarRecommendations] = useState([]);
 
   // AI Explanations State
@@ -261,7 +209,7 @@ export default function DailyDigest({
                     <button 
                       className="glass-button-secondary" 
                       style={{ fontSize: '12px', padding: '6px 12px' }}
-                      onClick={() => setActiveFigures(paper)}
+                      onClick={() => onViewPdf(paper)}
                     >
                       <BookOpen size={14} /> View PDF
                     </button>
@@ -352,121 +300,7 @@ export default function DailyDigest({
         </div>
       )}
 
-      {/* Figures & Tables Modal (PDF only with AI RAG Chat) */}
-      {activeFigures && (
-        <div className="modal-overlay" onClick={() => setActiveFigures(null)}>
-          <div className="modal-content glass-panel" style={{ maxWidth: '1200px', width: '95%', height: '90vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setActiveFigures(null)}><X size={20} /></button>
-            <h3 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-heading)' }}>Official PDF Document & AI Chat Assistant</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Document: <strong>"{activeFigures.title}"</strong>
-            </p>
-            
-            <div style={{ display: 'flex', flex: 1, gap: '16px', minHeight: 0, marginTop: '12px' }}>
-              {/* Left pane: PDF Iframe */}
-              <div style={{ flex: 1, background: '#0f111a', borderRadius: '8px', overflow: 'hidden', height: '100%' }}>
-                <iframe 
-                  src={`https://arxiv.org/pdf/${activeFigures.id}.pdf`}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  title={activeFigures.title}
-                />
-              </div>
-              
-              {/* Right pane: AI RAG Chat Sidebar */}
-              <div style={{ 
-                width: '340px', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                background: 'rgba(0, 0, 0, 0.2)', 
-                border: '1px solid rgba(255,255,255,0.05)', 
-                borderRadius: '8px', 
-                padding: '16px', 
-                minHeight: 0,
-                height: '100%'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-                  <Sparkles size={16} style={{ color: 'var(--accent-color)' }} />
-                  <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>Paper Assistant (RAG)</span>
-                </div>
-                
-                {/* Chat Messages Log */}
-                <div style={{ 
-                  flex: 1, 
-                  overflowY: 'auto', 
-                  marginBottom: '12px', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '10px',
-                  paddingRight: '4px'
-                }}>
-                  {chatHistory.map((msg, idx) => (
-                    <div 
-                      key={idx} 
-                      style={{ 
-                        alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                        maxWidth: '90%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        lineHeight: '1.4',
-                        textAlign: 'left',
-                        whiteSpace: 'pre-wrap',
-                        background: msg.sender === 'user' ? 'var(--accent-color)' : 'rgba(255,255,255,0.05)',
-                        color: msg.sender === 'user' ? '#fff' : 'var(--text-secondary)',
-                        border: msg.sender === 'user' ? 'none' : '1px solid rgba(255,255,255,0.02)'
-                      }}
-                    >
-                      {msg.text}
-                    </div>
-                  ))}
-                  {chatLoading && (
-                    <div 
-                      style={{ 
-                        alignSelf: 'flex-start',
-                        background: 'rgba(255,255,255,0.05)',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        color: 'var(--text-muted)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'var(--accent-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-                      Reading PDF & thinking...
-                    </div>
-                  )}
-                </div>
-                
-                {/* Chat Input Field */}
-                <form 
-                  onSubmit={handleSendChatMessage}
-                  style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}
-                >
-                  <input 
-                    type="text" 
-                    className="glass-input"
-                    placeholder="Ask about methodology, results..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    disabled={chatLoading}
-                    style={{ flex: 1, fontSize: '12px', padding: '8px 12px' }}
-                  />
-                  <button 
-                    type="submit" 
-                    className="glass-button" 
-                    disabled={chatLoading || !chatInput.trim()}
-                    style={{ padding: '8px' }}
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Similar Papers Drawer */}
       <div className={`similar-drawer glass-panel ${activeSimilar ? 'open' : ''}`}>
@@ -495,9 +329,15 @@ export default function DailyDigest({
               <h4 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#fff', textAlign: 'left', lineHeight: '1.4' }}>
                 {paper.title}
               </h4>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
                 <span>Cosine Sim: {(similarity * 100).toFixed(1)}%</span>
-                <span style={{ color: 'var(--accent-secondary)' }}>{paper.category_name}</span>
+                <button 
+                  className="glass-button-secondary"
+                  style={{ fontSize: '10px', padding: '2px 8px' }}
+                  onClick={() => onViewPdf(paper)}
+                >
+                  <BookOpen size={10} /> View PDF
+                </button>
               </div>
             </div>
           ))}

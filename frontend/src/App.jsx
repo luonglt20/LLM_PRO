@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Compass, Folder, Calendar, Sparkles, AlertTriangle, Key, Brain } from 'lucide-react';
+import { Mail, Compass, Folder, Calendar, Sparkles, AlertTriangle, Key, Brain, X, ChevronRight, BookOpen } from 'lucide-react';
 import DailyDigest from './components/DailyDigest';
 import ScholarMap from './components/ScholarMap';
 import Collections from './components/Collections';
@@ -24,6 +24,60 @@ export default function App() {
   const handleKeyChange = (val) => {
     setGeminiApiKey(val);
     localStorage.setItem('gemini_api_key', val);
+  };
+
+  // Global PDF Viewer & Chat States
+  const [activePdfPaper, setActivePdfPaper] = useState(null);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+
+  useEffect(() => {
+    if (activePdfPaper) {
+      setChatHistory([
+        {
+          sender: 'ai',
+          text: `Hi! I am your AI assistant for this paper. Ask me anything about the methodology, benchmarks, or results in "${activePdfPaper.title}".`
+        }
+      ]);
+    } else {
+      setChatHistory([]);
+    }
+    setChatInput('');
+    setChatLoading(false);
+  }, [activePdfPaper]);
+
+  const handleSendChatMessage = async (e) => {
+    if (e) e.preventDefault();
+    if (!chatInput.trim() || chatLoading) return;
+
+    const userMsg = chatInput.trim();
+    setChatHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
+    setChatInput('');
+    setChatLoading(true);
+
+    try {
+      const response = await fetch('http://127.0.0.1:5001/api/chat-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paper_id: activePdfPaper.id,
+          question: userMsg,
+          api_key: geminiApiKey
+        })
+      });
+      const data = await response.json();
+      if (data.answer) {
+        setChatHistory(prev => [...prev, { sender: 'ai', text: data.answer }]);
+      } else {
+        setChatHistory(prev => [...prev, { sender: 'ai', text: `Error: ${data.error || 'Failed to process question'}` }]);
+      }
+    } catch (err) {
+      console.error(err);
+      setChatHistory(prev => [...prev, { sender: 'ai', text: 'Error: Failed to connect to server.' }]);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   // 1. Fetch main papers and ratings
@@ -262,6 +316,7 @@ export default function App() {
                 bookmarkedIds={collections['My Library'] || []}
                 allPapers={papers}
                 geminiApiKey={geminiApiKey}
+                onViewPdf={setActivePdfPaper}
               />
             )}
             
@@ -271,6 +326,7 @@ export default function App() {
                 ratings={ratings}
                 onRate={handleRatePaper}
                 activeLearningPapers={activeLearningPapers}
+                onViewPdf={setActivePdfPaper}
               />
             )}
             
@@ -281,6 +337,7 @@ export default function App() {
                 allPapers={papers}
                 collections={collections}
                 onManageCollection={handleManageCollection}
+                onViewPdf={setActivePdfPaper}
               />
             )}
             
@@ -299,6 +356,122 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* Global PDF Document & AI Chat Assistant Modal */}
+      {activePdfPaper && (
+        <div className="modal-overlay" onClick={() => setActivePdfPaper(null)}>
+          <div className="modal-content glass-panel" style={{ maxWidth: '1200px', width: '95%', height: '90vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setActivePdfPaper(null)}><X size={20} /></button>
+            <h3 style={{ margin: '0 0 4px 0', fontFamily: 'var(--font-heading)' }}>Official PDF Document & AI Chat Assistant</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Document: <strong>"{activePdfPaper.title}"</strong>
+            </p>
+            
+            <div style={{ display: 'flex', flex: 1, gap: '16px', minHeight: 0, marginTop: '12px' }}>
+              {/* Left pane: PDF Iframe */}
+              <div style={{ flex: 1, background: '#0f111a', borderRadius: '8px', overflow: 'hidden', height: '100%' }}>
+                <iframe 
+                  src={`https://arxiv.org/pdf/${activePdfPaper.id}.pdf`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title={activePdfPaper.title}
+                />
+              </div>
+              
+              {/* Right pane: AI RAG Chat Sidebar */}
+              <div style={{ 
+                width: '340px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                background: 'rgba(0, 0, 0, 0.2)', 
+                border: '1px solid rgba(255,255,255,0.05)', 
+                borderRadius: '8px', 
+                padding: '16px', 
+                minHeight: 0,
+                height: '100%'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                  <Sparkles size={16} style={{ color: 'var(--accent-color)' }} />
+                  <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>Paper Assistant (RAG)</span>
+                </div>
+                
+                {/* Chat Messages Log */}
+                <div style={{ 
+                  flex: 1, 
+                  overflowY: 'auto', 
+                  marginBottom: '12px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '10px',
+                  paddingRight: '4px'
+                }}>
+                  {chatHistory.map((msg, idx) => (
+                    <div 
+                      key={idx} 
+                      style={{ 
+                        alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: '90%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        lineHeight: '1.4',
+                        textAlign: 'left',
+                        whiteSpace: 'pre-wrap',
+                        background: msg.sender === 'user' ? 'var(--accent-color)' : 'rgba(255,255,255,0.05)',
+                        color: msg.sender === 'user' ? '#fff' : 'var(--text-secondary)',
+                        border: msg.sender === 'user' ? 'none' : '1px solid rgba(255,255,255,0.02)'
+                      }}
+                    >
+                      {msg.text}
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div 
+                      style={{ 
+                        alignSelf: 'flex-start',
+                        background: 'rgba(255,255,255,0.05)',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        color: 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'var(--accent-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                      Reading PDF & thinking...
+                    </div>
+                  )}
+                </div>
+                
+                {/* Chat Input Field */}
+                <form 
+                  onSubmit={handleSendChatMessage}
+                  style={{ display: 'flex', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}
+                >
+                  <input 
+                    type="text" 
+                    className="glass-input"
+                    placeholder="Ask about methodology, results..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    disabled={chatLoading}
+                    style={{ flex: 1, fontSize: '12px', padding: '8px 12px' }}
+                  />
+                  <button 
+                    type="submit" 
+                    className="glass-button" 
+                    disabled={chatLoading || !chatInput.trim()}
+                    style={{ padding: '8px' }}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
