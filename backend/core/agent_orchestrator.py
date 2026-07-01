@@ -194,15 +194,15 @@ Title: {p['title']}
 Context:
 {summary_text[:3200]}
 
-You MUST cover these 3 sections in detail. Format in clean Markdown with bold subheadings:
+You MUST cover these 3 sections in detail. Format in clean plain text with regular subheadings (do not use markdown headers # or bold stars **):
 
-### 1. Mathematical & Algorithmic Core
+1. Mathematical & Algorithmic Core
 Describe the primary mathematical formulations (equations, losses) and neural architectures.
 
-### 2. Empirical Setup & Metrics
+2. Empirical Setup & Metrics
 Specify the datasets used, training hyperparameters (epochs, learning rate), and baseline methods.
 
-### 3. Scientific Limitations & Constraints
+3. Scientific Limitations & Constraints
 State the failure modes, high GPU memory requirements, and specific assumptions made.
 """
             critique = call_gemini(prompt, api_key)
@@ -212,11 +212,11 @@ State the failure modes, high GPU memory requirements, and specific assumptions 
             batch_match = re.findall(r'\b(?:batch\s*size|batch)\s*(?:of\s*)?\d+\b', summary_text, re.IGNORECASE)
             lr_match = re.findall(r'\b(?:learning\s*rate|lr)\s*(?:of\s*)?(?:0\.\d+|\d+e-\d+)\b', summary_text, re.IGNORECASE)
             
-            critique = "### 1. Mathematical & Algorithmic Core\n"
+            critique = "1. Mathematical & Algorithmic Core\n"
             critique += f"- Core Methodology: {p.get('highlight', 'arXiv algorithms')}.\n"
             critique += "- Uses token embeddings and high-dimensional semantic mapping space.\n"
             
-            critique += "\n### 2. Empirical Setup & Metrics\n"
+            critique += "\n2. Empirical Setup & Metrics\n"
             critique += f"- Primary Category: {p['category_name']} ({p['primary_category']}).\n"
             if epochs_match:
                 critique += f"- Extracted training parameter: {', '.join(epochs_match)}.\n"
@@ -225,7 +225,7 @@ State the failure modes, high GPU memory requirements, and specific assumptions 
             if lr_match:
                 critique += f"- Extracted learning rate: {', '.join(lr_match)}.\n"
                 
-            critique += "\n### 3. Scientific Limitations & Constraints\n"
+            critique += "\n3. Scientific Limitations & Constraints\n"
             critique += "- Quadratic computation complexity concerning input context lengths.\n"
             critique += "- Scalability limited by vector distance metric calculations."
             
@@ -296,34 +296,34 @@ You are the Editor-in-Chief compiling an academic Literature Review.
 Synthesize the provided reviews for the research topic: '{query}'.
 
 Your report MUST contain:
-1. **Introduction**: A formal introduction of the research topic and its significance.
-2. **Comparative Matrix**: A Markdown table comparing the papers. Column headers: | Paper | Methodology Core | Key Benchmark Metrics | Main Vulnerability |
-3. **Methodological Conflicts & Synergies**: Analyze if there are conflicting assumptions or how these methods can be combined synergistically (e.g. using the framework of Paper A to resolve constraints in Paper B).
-4. **Future Research Directions**: Three clear research directions.
+1. Introduction: A formal introduction of the research topic and its significance.
+2. Comparative Matrix: A plain text table comparing the papers (use standard pipes | and hyphens - but do not use bold text). Column headers: | Paper | Methodology Core | Key Benchmark Metrics | Main Vulnerability |
+3. Methodological Conflicts & Synergies: Analyze if there are conflicting assumptions or how these methods can be combined synergistically (e.g. using the framework of Paper A to resolve constraints in Paper B).
+4. Future Research Directions: Three clear research directions.
 
 Paper Reviews:
 {critiques_str}
 
-Use strict academic prose and formal Markdown layout. Write the entire report in Vietnamese. Do not use emojis.
+Use strict academic prose and clean text layout. Do not use any markdown formatting characters (like #, ##, *, **, etc.) in the report, use only clean plain text. Write the entire report in Vietnamese. Do not use emojis.
 """
         report = call_gemini(prompt, api_key)
     else:
         # Local Heuristic Comparative Matrix and Synthesis
-        report = f"# Literature Review: {query}\n\n"
-        report += "*(Local Heuristic Academic Synthesis - Gemini API Key is unconfigured)*\n\n"
-        report += "## 1. Introduction\n"
+        report = f"Literature Review: {query}\n\n"
+        report += "(Local Heuristic Academic Synthesis - Gemini API Key is unconfigured)\n\n"
+        report += "1. Introduction\n"
         report += f"This survey synthesizes contemporary literature regarding the topic of '{query}'.\n\n"
-        report += "## 2. Comparative Matrix\n"
-        report += "| Paper | Primary Category | Highlighted Contributions | Baseline Match |\n"
-        report += "| :--- | :--- | :--- | :--- |\n"
+        report += "2. Comparative Matrix\n"
+        report += "Paper | Primary Category | Highlighted Contributions | Baseline Match\n"
+        report += "--- | --- | --- | ---\n"
         for r in retrieved:
             p_obj = papers_lookup.get(r["id"], {})
-            report += f"| {r['title'][:30]}... | {p_obj.get('primary_category', 'N/A')} | {p_obj.get('highlight', 'N/A')[:40]}... | High |\n"
+            report += f"{r['title'][:30]}... | {p_obj.get('primary_category', 'N/A')} | {p_obj.get('highlight', 'N/A')[:40]}... | High\n"
         report += "\n"
-        report += "## 3. Methodological Conflicts & Synergies\n"
-        report += "- **Conflicts**: The approaches segment models into distinct manifolds (e.g. localized classification versus structural adapter tuning) which have conflicting constraints on inference latency.\n"
-        report += "- **Synergies**: The compositional framework of Dexterous Policies can be mapped onto low-rank redundancy adapters, enabling zero-shot model combination without fine-tuning.\n\n"
-        report += "## 4. Future Research Directions\n"
+        report += "3. Methodological Conflicts & Synergies\n"
+        report += "- Conflicts: The approaches segment models into distinct manifolds (e.g. localized classification versus structural adapter tuning) which have conflicting constraints on inference latency.\n"
+        report += "- Synergies: The compositional framework of Dexterous Policies can be mapped onto low-rank redundancy adapters, enabling zero-shot model combination without fine-tuning.\n\n"
+        report += "4. Future Research Directions\n"
         report += "1. Investigate cross-modal feature alignment in real-time robot grasping.\n"
         report += "2. Analyze the loss convergence behavior under low-rank structural tuning constraints.\n"
         report += "3. Develop distributed multi-agent systems for real-time literature retrieval."
