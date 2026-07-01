@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Bookmark, Clock, MapPin, Award, Trash2 } from 'lucide-react';
+import { Calendar, Bookmark, Clock, MapPin, Award, Trash2, BookOpen } from 'lucide-react';
 
-export default function ConferencePlanner({ ratings, allPapers }) {
+export default function ConferencePlanner({ ratings, allPapers, onViewPdf }) {
   const [sessions, setSessions] = useState([]);
   const [expandedSession, setExpandedSession] = useState(null);
   const [bookmarkedPosters, setBookmarkedPosters] = useState([]);
@@ -120,13 +120,22 @@ export default function ConferencePlanner({ ratings, allPapers }) {
                           </div>
                         </div>
                         
-                        <button 
-                          className={`action-btn ${isBookmarked ? 'bookmarked' : ''}`}
-                          onClick={() => toggleBookmarkPoster(paper)}
-                          title={isBookmarked ? "Remove from Schedule" : "Add to Schedule"}
-                        >
-                          <Bookmark size={14} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button 
+                            className="glass-button-secondary"
+                            style={{ fontSize: '11px', padding: '4px 10px' }}
+                            onClick={() => onViewPdf(paper)}
+                          >
+                            <BookOpen size={12} /> View PDF
+                          </button>
+                          <button 
+                            className={`action-btn ${isBookmarked ? 'bookmarked' : ''}`}
+                            onClick={() => toggleBookmarkPoster(paper)}
+                            title={isBookmarked ? "Remove from Schedule" : "Add to Schedule"}
+                          >
+                            <Bookmark size={14} />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -187,13 +196,22 @@ export default function ConferencePlanner({ ratings, allPapers }) {
                           </span>
                         </div>
                         
-                        <button 
-                          className="active-learning-btn"
-                          onClick={() => toggleBookmarkPoster(poster)}
-                          style={{ padding: '4px' }}
-                        >
-                          <Trash2 size={12} style={{ color: 'var(--score-negative-text)' }} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button 
+                            className="glass-button-secondary"
+                            style={{ fontSize: '10px', padding: '2px 8px' }}
+                            onClick={() => onViewPdf(poster)}
+                          >
+                            <BookOpen size={10} /> View
+                          </button>
+                          <button 
+                            className="active-learning-btn"
+                            onClick={() => toggleBookmarkPoster(poster)}
+                            style={{ padding: '4px' }}
+                          >
+                            <Trash2 size={12} style={{ color: 'var(--score-negative-text)' }} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

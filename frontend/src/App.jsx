@@ -345,6 +345,7 @@ export default function App() {
               <ConferencePlanner 
                 ratings={ratings}
                 allPapers={papers}
+                onViewPdf={setActivePdfPaper}
               />
             )}
             
