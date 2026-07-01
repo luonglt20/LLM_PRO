@@ -228,21 +228,22 @@ def critic_papers_node(state: AgentState) -> Dict[str, Any]:
             
         if api_key:
             prompt = f"""
-You are an expert peer reviewer. Perform a structured critique of this paper in Vietnamese:
+You are an expert academic peer reviewer. Perform an in-depth, highly structured scientific critique of this paper in Vietnamese:
 Title: {p['title']}
 Context:
-{summary_text[:3200]}
+{summary_text[:3500]}
 
-You MUST cover these 3 sections in detail. Format in clean plain text with regular subheadings (do not use markdown headers # or bold stars **):
+Please extract and analyze the following aspects thoroughly, using clear markdown lists (-), bold text (**), and headings (##, ###) where appropriate:
+1. Mathematical & Algorithmic Core:
+   - Identify the exact mathematical foundations, loss functions, algorithms, and key structural modules.
+   - Explain how the core process flow works.
+2. Empirical Setup & Metrics:
+   - Identify the specific datasets, baseline models compared against, training parameters (learning rates, batch sizes, hardware/GPU requirements).
+   - State the primary evaluation metrics and key results.
+3. Scientific Limitations & Constraints:
+   - Detail the primary limitations, compute constraints, failure modes, or narrow assumptions.
 
-1. Mathematical & Algorithmic Core
-Describe the primary mathematical formulations (equations, losses) and neural architectures.
-
-2. Empirical Setup & Metrics
-Specify the datasets used, training hyperparameters (epochs, learning rate), and baseline methods.
-
-3. Scientific Limitations & Constraints
-State the failure modes, high GPU memory requirements, and specific assumptions made.
+Format your critique cleanly in Vietnamese. Be highly technical, specific, and precise.
 """
             critique = call_gemini(prompt, api_key)
         else:
@@ -331,30 +332,36 @@ def synthesize_report_node(state: AgentState) -> Dict[str, Any]:
         
     if api_key:
         prompt = f"""
-Bạn là Trưởng nhóm Nghiên cứu Khoa học (Director of Research). Hãy xây dựng một Lộ trình Nghiên cứu (Research Roadmap) và Kế hoạch Thực nghiệm (Implementation Plan) chi tiết bằng tiếng Việt dựa trên chủ đề nghiên cứu: '{query}' và các phân tích bài báo tham khảo bên dưới.
+Bạn là Trưởng nhóm Nghiên cứu Khoa học (Director of Research). Hãy xây dựng một Lộ trình Nghiên cứu (Research Roadmap) và Kế hoạch Thực nghiệm (Implementation Plan) chuyên sâu, cực kỳ chi tiết bằng tiếng Việt dựa trên chủ đề nghiên cứu: '{query}' và các phân tích bài báo tham khảo bên dưới.
+
+Yêu cầu về chất lượng đầu ra:
+- **Độ sâu học thuật:** Đi sâu vào phân tích bản chất thuật toán, cơ chế toán học (ví dụ: các hàm mục tiêu loss function, phân phối xác suất, chuỗi Markov) của các bài báo tham khảo. Tránh viết chung chung kiểu giới thiệu.
+- **Tính khả thi thực tế:** Đưa ra các bước kỹ thuật cụ thể (cấu hình thư viện, phiên bản CUDA, tài nguyên phần cứng GPU cần thiết) để triển khai thực nghiệm.
+- **So sánh đối chiếu sắc bén:** Chỉ rõ các điểm mâu thuẫn về giả định hoặc sự bổ trợ tương hỗ giữa các phương pháp.
 
 Báo cáo lộ trình phải sử dụng định dạng Markdown chuẩn (tiêu đề #, ##, ###, danh sách bullet -, và bảng so sánh) và phải bao gồm đầy đủ các phần sau:
 
 # Lộ trình Nghiên cứu & Kế hoạch Thực hiện: {query}
 
 ## 1. Tổng quan & Mục tiêu Chiến lược
-- Giới thiệu ngắn gọn về tầm quan trọng và bối cảnh khoa học của chủ đề '{query}'.
-- Xác định mục tiêu nghiên cứu cụ thể mà lộ trình này hướng tới.
+- Giới thiệu chi tiết bối cảnh khoa học, các thách thức kỹ thuật hiện tại của chủ đề '{query}'.
+- Xác định mục tiêu nghiên cứu cụ thể, các chỉ số thành công (Key Results) mà lộ trình hướng tới.
 
 ## 2. Bản đồ Tài liệu Tham khảo (Reference Mapping)
-- Phân tích vai trò đóng góp của các tài liệu tham khảo được cung cấp đối với mục tiêu chung.
-- Xây dựng một bảng so sánh Markdown (Comparative Matrix) gồm các cột: Bài Báo | Phương Pháp Cốt Lõi | Chỉ Số Thực Nghiệm | Điểm Yếu/Hạn Chế. Điền thông tin chính xác từ bài phân tích.
+- Phân tích chi tiết vai trò của 3 tài liệu tham khảo trong việc giải quyết bài toán mục tiêu.
+- Vẽ bảng so sánh Markdown (Comparative Matrix) gồm các cột: Bài Báo | Phương Pháp Cốt Lõi (mô tả rõ mô hình/thuật toán) | Chỉ Số Thực Nghiệm (nêu rõ bộ dữ liệu và kết quả đạt được) | Điểm Yếu/Hạn Chế (nêu rõ giới hạn phần cứng, độ trễ hoặc lỗi biên).
 
-## 3. Kế hoạch Tiếp cận Theo Giai đoạn (Phased Implementation Plan)
-- **Giai đoạn 1: Nền tảng & Tái lập (Foundation & Replication)**: Xác định cụ thể tài liệu nào cần tái lập đầu tiên, cài đặt môi trường gì.
-- **Giai đoạn 2: Tích hợp & Phát triển (Integration & Synergy)**: Mô tả phương án kỹ thuật chi tiết để tích hợp thế mạnh của các bài báo lại với nhau (ví dụ: dùng giải pháp của bài A để khắc phục lỗ hổng của bài B).
-- **Giai đoạn 3: Tối ưu hóa & Đánh giá (Optimization & Evaluation)**: Các chỉ số benchmark cần theo dõi và kế hoạch kiểm thử hiệu năng.
+## 3. Lộ trình Triển khai Kỹ thuật Theo Giai đoạn (Phased Technical Plan)
+- **Giai đoạn 1: Nền tảng & Tái lập (Replication Phase - Tuần 1-3)**: Chỉ rõ bài báo nào cần clone repo và tái lập trước, phiên bản framework (như PyTorch, TensorFlow), và tập dữ liệu mẫu cần chạy thử.
+- **Giai đoạn 2: Tích hợp & Kết hợp Thuật toán (Synergy & Integration Phase - Tuần 4-6)**: Đề xuất giải pháp kỹ thuật cụ thể để kết hợp cấu trúc (ví dụ: nhúng bộ encoder của Bài báo A vào mô hình khuếch tán của Bài báo B) nhằm tối ưu hóa hiệu năng hoặc giảm độ phức tạp tính toán.
+- **Giai đoạn 3: Huấn luyện & Đánh giá (Evaluation & Fine-tuning Phase - Tuần 7-9)**: Quy trình tinh chỉnh tham số (Fine-tuning, LoRA), cách thiết lập baseline và các chỉ số benchmark (như accuracy, F1, Latency, FPS) cần giám sát.
 
-## 4. Kế hoạch Hành động cụ thể (Milestone Schedule)
-- Tạo một bảng Markdown phân chia cụ thể các mốc thời gian hành động theo tuần/tháng (ví dụ: Tuần 1-2, Tuần 3-4,...) kèm mục tiêu cụ thể.
+## 4. Kế hoạch Hành động & Mốc quan trọng (Milestone Timeline)
+- Thiết lập bảng Markdown phân rã kế hoạch theo từng giai đoạn tuần/tháng, chỉ rõ: Mốc thời gian | Hoạt động chi tiết | Tiêu chí nghiệm thu (Deliverables).
 
-## 5. Rủi ro Kỹ thuật & Phương án Dự phòng
-- Xác định các rủi ro kỹ thuật chính (ví dụ: tràn bộ nhớ GPU, phân rã loss, overfitting) và đề xuất phương án dự phòng (mitigation strategy) tương ứng.
+## 5. Đánh giá Rủi ro Kỹ thuật & Phương án Giải quyết
+- Phân tích 3 rủi ro kỹ thuật lớn nhất (ví dụ: không hội tụ loss, thiếu bộ nhớ GPU, overfitting trên tập dữ liệu hẹp) dựa trên hạn chế của các bài báo gốc.
+- Đề xuất phương án kỹ thuật dự phòng chi tiết cho từng rủi ro (như dùng FP16/BF16, gradient checkpointing, hoặc transfer learning).
 
 Thông tin phân tích bài báo:
 {critiques_str}

@@ -183,6 +183,35 @@ def get_gemini_embedding(text, api_key):
         print(f"Error fetching Gemini embedding: {e}. Falling back...")
         return None
 
+def get_gemini_embeddings_batch(texts, api_key):
+    """
+    Fetches dense vector embeddings in a single batch request using Gemini's text-embedding-004 model.
+    """
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents?key={api_key}"
+    requests = []
+    for txt in texts:
+        requests.append({
+            "model": "models/text-embedding-004",
+            "content": {
+                "parts": [{"text": txt}]
+            }
+        })
+    payload = {"requests": requests}
+    headers = {"Content-Type": "application/json"}
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers=headers,
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=15) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            return [emb['values'] for emb in res_data['embeddings']]
+    except Exception as e:
+        print(f"Error fetching batch Gemini embeddings: {e}")
+        return None
+
 def answer_pdf_question_heuristic(chunks, question):
     """
     Local heuristic fallback that displays retrieved snippets from the PDF

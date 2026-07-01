@@ -332,31 +332,80 @@ def chat_pdf():
     if not chunks:
         return jsonify({"error": "No text content could be extracted from this PDF"}), 500
         
-    # 2. Vectorize child chunks and question to find top matching chunks via Cosine Similarity
-    try:
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        vectorizer = TfidfVectorizer(stop_words='english')
-        # Use child_text for high-precision search, falls back to text if child_text is missing
-        corpus = [c.get("child_text", c["text"]) for c in chunks]
-        vectorizer.fit(corpus + [question])
-        
-        chunk_vectors = vectorizer.transform(corpus)
-        question_vector = vectorizer.transform([question])
-        
-        # Compute Cosine Similarity
-        similarities = np.dot(chunk_vectors.toarray(), question_vector.T.toarray()).flatten()
-        
-        # Rank chunks
-        for idx, sim in enumerate(similarities):
-            chunks[idx]["score"] = float(sim)
+    # 2. Vectorize child chunks and question to find top matching chunks via Hybrid Semantic-Lexical Search
+    top_chunks = []
+    
+    use_semantic = api_key and not api_key.startswith("gsk_")
+    if use_semantic:
+        try:
+            from core.llm_helper import get_gemini_embedding, get_gemini_embeddings_batch
             
-        ranked_chunks = sorted(chunks, key=lambda c: c["score"], reverse=True)
-        top_chunks = ranked_chunks[:3]
-    except Exception as e:
-        print(f"TF-IDF chunk similarity failed: {e}. Defaulting to first 3 page chunks.")
-        top_chunks = chunks[:3]
-        for c in top_chunks:
-            c["score"] = 0.0
+            # Embed uncached chunks in batches of 50 to minimize network roundtrips
+            uncached_chunks = [c for c in chunks if "embedding" not in c]
+            if uncached_chunks:
+                print(f"Generating dense vector embeddings for {len(uncached_chunks)} uncached PDF page chunks...")
+                texts_to_embed = [c.get("child_text", c["text"]) for c in uncached_chunks]
+                batch_limit = 50
+                for start_idx in range(0, len(texts_to_embed), batch_limit):
+                    subset = texts_to_embed[start_idx : start_idx + batch_limit]
+                    subset_embeddings = get_gemini_embeddings_batch(subset, api_key)
+                    if subset_embeddings:
+                        for offset, emb in enumerate(subset_embeddings):
+                            uncached_chunks[start_idx + offset]["embedding"] = emb
+                            
+                # Save updated chunks back to disk cache so future chats do not recompute embeddings
+                try:
+                    with open(cache_file, "w") as f:
+                        json.dump(chunks, f, indent=2)
+                except Exception as cache_err:
+                    print(f"Failed to update cache file with embeddings: {cache_err}")
+            
+            # Fetch user question embedding vector
+            q_emb = get_gemini_embedding(question, api_key)
+            
+            if q_emb and all("embedding" in c for c in chunks):
+                q_vec = np.array(q_emb)
+                q_norm = np.linalg.norm(q_vec)
+                
+                # Compute Cosine Similarity between query embedding and cached chunk embeddings
+                for c in chunks:
+                    c_vec = np.array(c["embedding"])
+                    c_norm = np.linalg.norm(c_vec)
+                    if q_norm > 0 and c_norm > 0:
+                        sim = float(np.dot(c_vec, q_vec) / (c_norm * q_norm))
+                    else:
+                        sim = 0.0
+                    c["score"] = sim
+                    
+                ranked_chunks = sorted(chunks, key=lambda c: c["score"], reverse=True)
+                top_chunks = ranked_chunks[:3]
+                print(f"Semantic dense search completed successfully. Top chunk score: {top_chunks[0]['score']:.4f}")
+        except Exception as semantic_err:
+            print(f"Semantic embedding search failed: {semantic_err}. Falling back to TF-IDF.")
+            
+    if not top_chunks:
+        try:
+            from sklearn.feature_extraction.text import TfidfVectorizer
+            vectorizer = TfidfVectorizer(stop_words='english')
+            corpus = [c.get("child_text", c["text"]) for c in chunks]
+            vectorizer.fit(corpus + [question])
+            
+            chunk_vectors = vectorizer.transform(corpus)
+            question_vector = vectorizer.transform([question])
+            
+            similarities = np.dot(chunk_vectors.toarray(), question_vector.T.toarray()).flatten()
+            
+            for idx, sim in enumerate(similarities):
+                chunks[idx]["score"] = float(sim)
+                
+            ranked_chunks = sorted(chunks, key=lambda c: c["score"], reverse=True)
+            top_chunks = ranked_chunks[:3]
+            print("TF-IDF lexical search fallback completed successfully.")
+        except Exception as tfidf_err:
+            print(f"TF-IDF chunk similarity failed: {tfidf_err}. Defaulting to first 3 page chunks.")
+            top_chunks = chunks[:3]
+            for c in top_chunks:
+                c["score"] = 0.0
             
     # 3. Ask Gemini/Heuristic to answer the question based on context chunks
     answer = answer_pdf_question(top_chunks, question, api_key)
