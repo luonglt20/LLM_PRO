@@ -33,7 +33,8 @@ def call_gemini(prompt: str, api_key: str, model: str = "gemini-2.5-flash") -> s
         }
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         try:
             req = urllib.request.Request(
