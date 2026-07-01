@@ -19,34 +19,72 @@ class AgentState(TypedDict):
 
 # 2. General LLM Calling Helper
 def call_gemini(prompt: str, api_key: str, model: str = "gemini-2.5-flash") -> str:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
-    headers = {"Content-Type": "application/json"}
-    try:
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode('utf-8'),
-            headers=headers,
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=120) as response:
-            res_data = json.loads(response.read().decode('utf-8'))
-            return res_data['candidates'][0]['content']['parts'][0]['text']
-    except urllib.error.HTTPError as e:
-        err_body = ""
+    if not api_key:
+        return ""
+        
+    if api_key.startswith("gsk_"):
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.2
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
         try:
-            err_body = e.read().decode('utf-8')
-        except Exception:
-            pass
-        print(f"Error calling Gemini in agent (HTTPError {e.code}): {e.reason} - Body: {err_body}", flush=True)
-        return f"Error: Failed to fetch response from Gemini. Details: HTTP Error {e.code}: {e.reason}. Response: {err_body}"
-    except Exception as e:
-        print(f"Error calling Gemini in agent: {e}", flush=True)
-        return f"Error: Failed to fetch response from Gemini. Details: {e}"
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=30) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return res_data['choices'][0]['message']['content']
+        except urllib.error.HTTPError as e:
+            err_body = ""
+            try:
+                err_body = e.read().decode('utf-8')
+            except Exception:
+                pass
+            print(f"Error calling Groq in agent (HTTPError {e.code}): {e.reason} - Body: {err_body}", flush=True)
+            return f"Error: Failed to fetch response from Groq. Details: HTTP Error {e.code}: {e.reason}. Response: {err_body}"
+        except Exception as e:
+            print(f"Error calling Groq in agent: {e}", flush=True)
+            return f"Error: Failed to fetch response from Groq. Details: {e}"
+    else:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        headers = {"Content-Type": "application/json"}
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=120) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return res_data['candidates'][0]['content']['parts'][0]['text']
+        except urllib.error.HTTPError as e:
+            err_body = ""
+            try:
+                err_body = e.read().decode('utf-8')
+            except Exception:
+                pass
+            print(f"Error calling Gemini in agent (HTTPError {e.code}): {e.reason} - Body: {err_body}", flush=True)
+            return f"Error: Failed to fetch response from Gemini. Details: HTTP Error {e.code}: {e.reason}. Response: {err_body}"
+        except Exception as e:
+            print(f"Error calling Gemini in agent: {e}", flush=True)
+            return f"Error: Failed to fetch response from Gemini. Details: {e}"
 
 # 3. Agent 1: ArxivSearchAgent (Hybrid Semantic-Personalized Search)
 def search_arxiv_node(state: AgentState) -> Dict[str, Any]:

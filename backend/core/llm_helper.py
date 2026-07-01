@@ -56,10 +56,8 @@ def explain_recommendation_heuristic(user_interests, paper_title, paper_abstract
 
 def explain_recommendation_llm(user_interests, paper_title, paper_abstract, category_name, api_key):
     """
-    Calls Google Gemini 1.5 Flash API to get structured JSON recommendations explanation.
+    Calls Google Gemini or Groq Llama API to get structured JSON recommendations explanation.
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    
     # Build prompt
     prompt = f"""
 You are an expert scientific paper recommendation assistant for researchers.
@@ -72,52 +70,77 @@ Category: {category_name}
 Abstract: {paper_abstract}
 
 Your tasks:
-1. "explanation": Write a 1-sentence personalized explanation (in Vietnamese) detailing why this paper matches their upvoted interest profile. Be specific about methodologies or concepts.
-2. "tailored_summary": Write a 2-sentence summary (in Vietnamese) of this paper tailored to their background, highlighting details they would find most interesting based on their upvotes.
+1. "explanation": Write a 1-sentence personalized explanation (in Vietnamese) detailing why this paper matches their upvoted interest profile. Be specific about methodologies or concepts. Do not use any markdown formatting characters (like *, **, #) in the explanation string.
+2. "tailored_summary": Write a 2-sentence summary (in Vietnamese) of this paper tailored to their background, highlighting details they would find most interesting based on their upvotes. Do not use any markdown formatting characters (like *, **, #) in the summary string.
 
 You must respond in strict JSON format matching the schema. Do not write markdown blocks or HTML.
 """
     
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }],
-        "generationConfig": {
-            "responseMimeType": "application/json",
-            "responseSchema": {
-                "type": "OBJECT",
-                "properties": {
-                    "explanation": {"type": "STRING"},
-                    "tailored_summary": {"type": "STRING"}
-                },
-                "required": ["explanation", "tailored_summary"]
+    if api_key.startswith("gsk_"):
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"}
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        try:
+            req = urllib.request.Request(
+                url, 
+                data=json.dumps(payload).encode('utf-8'), 
+                headers=headers, 
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                text_response = res_data['choices'][0]['message']['content']
+                parsed_json = json.loads(text_response.strip())
+                parsed_json["source"] = "Groq Llama"
+                return parsed_json
+        except Exception as e:
+            print(f"Error calling Groq API in explain_recommendation_llm: {e}. Falling back to heuristic...")
+            return explain_recommendation_heuristic(user_interests, paper_title, paper_abstract, category_name)
+    else:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "responseSchema": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "explanation": {"type": "STRING"},
+                        "tailored_summary": {"type": "STRING"}
+                    },
+                    "required": ["explanation", "tailored_summary"]
+                }
             }
         }
-    }
-    
-    headers = {"Content-Type": "application/json"}
-    
-    try:
-        req = urllib.request.Request(
-            url, 
-            data=json.dumps(payload).encode('utf-8'), 
-            headers=headers, 
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=8) as response:
-            res_data = json.loads(response.read().decode('utf-8'))
-            
-            # Extract content from Gemini response
-            text_response = res_data['candidates'][0]['content']['parts'][0]['text']
-            parsed_json = json.loads(text_response.strip())
-            
-            parsed_json["source"] = "Gemini LLM"
-            return parsed_json
-            
-    except Exception as e:
-        print(f"Error calling Gemini API: {e}. Falling back to heuristic...")
-        # Fallback to local heuristic
-        return explain_recommendation_heuristic(user_interests, paper_title, paper_abstract, category_name)
+        headers = {"Content-Type": "application/json"}
+        try:
+            req = urllib.request.Request(
+                url, 
+                data=json.dumps(payload).encode('utf-8'), 
+                headers=headers, 
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=8) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                text_response = res_data['candidates'][0]['content']['parts'][0]['text']
+                parsed_json = json.loads(text_response.strip())
+                parsed_json["source"] = "Gemini LLM"
+                return parsed_json
+        except Exception as e:
+            print(f"Error calling Gemini API: {e}. Falling back to heuristic...")
+            return explain_recommendation_heuristic(user_interests, paper_title, paper_abstract, category_name)
 
 def explain_recommendation(user_interests, paper_title, paper_abstract, category_name, api_key=None):
     """
@@ -170,14 +193,14 @@ def answer_pdf_question_heuristic(chunks, question):
     for i, c in enumerate(chunks[:2]):
         cleaned_text = c['text'].replace('\n', ' ').strip()
         score = c.get('score', 0.0)
-        ans += f"📄 **Phần {i+1}** (Điểm tương đồng: {score:.2f}):\n"
+        ans += f"📄 Phần {i+1} (Điểm tương đồng: {score:.2f}):\n"
         ans += f"\"... {cleaned_text[:350]} ...\"\n\n"
-    ans += "💡 *Mẹo: Hãy nhập Gemini API Key chính xác trong menu cài đặt (biểu tượng 🔑 ở góc trên bên phải) để mở khóa câu trả lời AI đầy đủ và thông minh nhất!*"
+    ans += "💡 Mẹo: Hãy nhập Gemini API Key chính xác trong menu cài đặt (biểu tượng 🔑 ở góc trên bên phải) để mở khóa câu trả lời AI đầy đủ và thông minh nhất!"
     return ans
 
 def answer_pdf_question(chunks, question, api_key):
     """
-    Asks Gemini 1.5 Flash to answer a user's question using the retrieved PDF chunks as context.
+    Asks Gemini or Groq to answer a user's question using the retrieved PDF chunks as context.
     """
     if not api_key:
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -192,7 +215,7 @@ def answer_pdf_question(chunks, question, api_key):
     prompt = f"""
 You are an expert scientific research assistant.
 Answer the user's question about the paper based ONLY on the provided context snippets extracted from the paper's PDF.
-Keep your response concise, factual, and professional. Use markdown list elements or bold text for key terms.
+Keep your response concise, factual, and professional. Do not use any markdown formatting characters (like *, **, #, etc.) in your response. Write only in clean plain text with regular paragraphs or clean bullet points (using standard hyphen - without stars).
 If the context snippets do not contain enough information to answer the question, state that clearly.
 
 Context Snippets:
@@ -201,24 +224,51 @@ Context Snippets:
 Question: {question}
 Answer (in Vietnamese):
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
-    headers = {"Content-Type": "application/json"}
-    try:
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode('utf-8'),
-            headers=headers,
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=10) as response:
-            res_data = json.loads(response.read().decode('utf-8'))
-            return res_data['candidates'][0]['content']['parts'][0]['text']
-    except Exception as e:
-        print(f"Error calling Gemini in answer_pdf_question: {e}. Falling back...")
-        return answer_pdf_question_heuristic(chunks, question)
+    if api_key.startswith("gsk_"):
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.2
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=15) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return res_data['choices'][0]['message']['content']
+        except Exception as e:
+            print(f"Error calling Groq in answer_pdf_question: {e}. Falling back...")
+            return answer_pdf_question_heuristic(chunks, question)
+    else:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        headers = {"Content-Type": "application/json"}
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return res_data['candidates'][0]['content']['parts'][0]['text']
+        except Exception as e:
+            print(f"Error calling Gemini in answer_pdf_question: {e}. Falling back...")
+            return answer_pdf_question_heuristic(chunks, question)
 
