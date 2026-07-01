@@ -58,7 +58,7 @@ def explain_recommendation_llm(user_interests, paper_title, paper_abstract, cate
     """
     Calls Google Gemini 1.5 Flash API to get structured JSON recommendations explanation.
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     # Build prompt
     prompt = f"""
@@ -201,7 +201,7 @@ Context Snippets:
 Question: {question}
 Answer (in English):
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{
             "parts": [{"text": prompt}]

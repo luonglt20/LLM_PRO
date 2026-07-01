@@ -1,6 +1,7 @@
 import os
 import json
 import urllib.request
+import urllib.error
 import re
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
@@ -17,7 +18,7 @@ class AgentState(TypedDict):
     final_report: str
 
 # 2. General LLM Calling Helper
-def call_gemini(prompt: str, api_key: str, model: str = "gemini-1.5-flash") -> str:
+def call_gemini(prompt: str, api_key: str, model: str = "gemini-2.5-flash") -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     payload = {
         "contents": [{
@@ -32,11 +33,19 @@ def call_gemini(prompt: str, api_key: str, model: str = "gemini-1.5-flash") -> s
             headers=headers,
             method='POST'
         )
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=120) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             return res_data['candidates'][0]['content']['parts'][0]['text']
+    except urllib.error.HTTPError as e:
+        err_body = ""
+        try:
+            err_body = e.read().decode('utf-8')
+        except Exception:
+            pass
+        print(f"Error calling Gemini in agent (HTTPError {e.code}): {e.reason} - Body: {err_body}", flush=True)
+        return f"Error: Failed to fetch response from Gemini. Details: HTTP Error {e.code}: {e.reason}. Response: {err_body}"
     except Exception as e:
-        print(f"Error calling Gemini in agent: {e}")
+        print(f"Error calling Gemini in agent: {e}", flush=True)
         return f"Error: Failed to fetch response from Gemini. Details: {e}"
 
 # 3. Agent 1: ArxivSearchAgent (Hybrid Semantic-Personalized Search)
@@ -155,12 +164,9 @@ def critic_papers_node(state: AgentState) -> Dict[str, Any]:
         "message": "PaperCriticAgent to ArxivSearchAgent: Received candidates. Initializing deep PDF extraction workflows from cache..."
     })
         
-    for p in papers:
-        logs.append({
-            "agent": "PaperCriticAgent",
-            "message": f"PaperCriticAgent: Analyzing paper '{p['title'][:45]}...'. Mining mathematical equations, dataset specs, and training metrics."
-        })
-        
+    import concurrent.futures
+
+    def process_single_paper(p):
         # Load PDF RAG chunks
         backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         pdf_cache_dir = os.path.join(backend_dir, "pdf_cache")
@@ -223,12 +229,22 @@ State the failure modes, high GPU memory requirements, and specific assumptions 
             critique += "- Quadratic computation complexity concerning input context lengths.\n"
             critique += "- Scalability limited by vector distance metric calculations."
             
-        retrieved.append({
+        return {
             "id": p["id"],
             "title": p["title"],
             "critique": critique
+        }
+
+    for p in papers:
+        logs.append({
+            "agent": "PaperCriticAgent",
+            "message": f"PaperCriticAgent: Analyzing paper '{p['title'][:45]}...'. Mining mathematical equations, dataset specs, and training metrics."
         })
-        
+
+    # Execute paper analyses concurrently
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(papers)) as executor:
+        retrieved = list(executor.map(process_single_paper, papers))
+
     logs.append({
         "agent": "PaperCriticAgent",
         "message": "PaperCriticAgent to LiteratureReviewAgent: Critiques completed. I noted several baseline constraints. Sending structured parameters for final comparative synthesis."

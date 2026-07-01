@@ -572,7 +572,7 @@ def agent_chat():
         return jsonify({"error": "Query cannot be empty"}), 400
         
     try:
-        from agent_orchestrator import run_agent_workflow
+        from core.agent_orchestrator import run_agent_workflow
         output = run_agent_workflow(query, api_key)
         return jsonify({
             "report": output.get("final_report", ""),

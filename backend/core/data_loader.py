@@ -364,7 +364,7 @@ Return a strict JSON list of IDs of the papers that are LOW QUALITY, INCOMPLETE,
 Format your response as a valid JSON list. Do not use markdown blocks or HTML.
 Example: ["id1", "id2"]
 """
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{
                 "parts": [{"text": prompt}]
