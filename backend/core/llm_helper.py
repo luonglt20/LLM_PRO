@@ -72,8 +72,8 @@ Category: {category_name}
 Abstract: {paper_abstract}
 
 Your tasks:
-1. "explanation": Write a 1-sentence personalized explanation (in English) detailing why this paper matches their upvoted interest profile. Be specific about methodologies or concepts.
-2. "tailored_summary": Write a 2-sentence summary (in English) of this paper tailored to their background, highlighting details they would find most interesting based on their upvotes.
+1. "explanation": Write a 1-sentence personalized explanation (in Vietnamese) detailing why this paper matches their upvoted interest profile. Be specific about methodologies or concepts.
+2. "tailored_summary": Write a 2-sentence summary (in Vietnamese) of this paper tailored to their background, highlighting details they would find most interesting based on their upvotes.
 
 You must respond in strict JSON format matching the schema. Do not write markdown blocks or HTML.
 """
@@ -199,7 +199,7 @@ Context Snippets:
 {snippets}
 
 Question: {question}
-Answer (in English):
+Answer (in Vietnamese):
 """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = {

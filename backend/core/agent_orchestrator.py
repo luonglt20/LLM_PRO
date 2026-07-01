@@ -189,7 +189,7 @@ def critic_papers_node(state: AgentState) -> Dict[str, Any]:
             
         if api_key:
             prompt = f"""
-You are an expert peer reviewer. Perform a structured critique of this paper:
+You are an expert peer reviewer. Perform a structured critique of this paper in Vietnamese:
 Title: {p['title']}
 Context:
 {summary_text[:3200]}
@@ -304,7 +304,7 @@ Your report MUST contain:
 Paper Reviews:
 {critiques_str}
 
-Use strict academic prose and formal Markdown layout. Do not use emojis.
+Use strict academic prose and formal Markdown layout. Write the entire report in Vietnamese. Do not use emojis.
 """
         report = call_gemini(prompt, api_key)
     else:
