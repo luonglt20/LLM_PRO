@@ -68,7 +68,7 @@ const workspaceLayoutStyles = {
     boxSizing: 'border-box',
     overflow: 'hidden',
     padding: '24px',
-    minHeight: '400px'
+    minHeight: '450px'
   },
   logsContainer: {
     flex: '1',
@@ -86,6 +86,130 @@ const workspaceLayoutStyles = {
     paddingRight: '8px'
   }
 };
+
+// Helper function to parse and render styled markdown elements
+function renderMarkdown(text) {
+  if (!text) return null;
+  
+  const lines = text.split('\n');
+  let inTable = false;
+  let tableHeader = null;
+  let tableRows = [];
+  
+  const renderedElements = [];
+  
+  const parseBoldText = (txt) => {
+    if (!txt) return "";
+    const parts = txt.split(/\*\*([^*]+)\*\*/g);
+    return parts.map((part, index) => {
+      return index % 2 === 1 ? (
+        <strong style={{ color: '#fff', fontWeight: '600' }} key={index}>{part}</strong>
+      ) : part;
+    });
+  };
+  
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    
+    // Check for table rows
+    if (line.startsWith('|')) {
+      inTable = true;
+      const cells = line.split('|').map(c => c.trim()).filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
+      
+      if (line.includes('---')) {
+        // Separator row, skip
+        continue;
+      }
+      
+      if (!tableHeader) {
+        tableHeader = cells;
+      } else {
+        tableRows.push(cells);
+      }
+      continue;
+    } else {
+      // If table ended, render it first
+      if (inTable && tableHeader) {
+        const headerCells = [...tableHeader];
+        const rowsCells = [...tableRows];
+        
+        renderedElements.push(
+          <div style={{ overflowX: 'auto', margin: '16px 0' }} key={`table-${i}`}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  {headerCells.map((h, idx) => (
+                    <th key={idx} style={{ padding: '8px 12px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left', fontWeight: '700', color: '#fff' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rowsCells.map((row, rIdx) => (
+                  <tr key={rIdx} style={{ background: rIdx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+                    {row.map((c, cIdx) => (
+                      <td key={cIdx} style={{ padding: '8px 12px', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}>{parseBoldText(c)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        inTable = false;
+        tableHeader = null;
+        tableRows = [];
+      }
+    }
+    
+    if (!line) {
+      renderedElements.push(<div style={{ height: '8px' }} key={`space-${i}`} />);
+      continue;
+    }
+    
+    // Check for headings
+    if (line.startsWith('###')) {
+      renderedElements.push(
+        <h4 style={{ margin: '18px 0 8px 0', color: 'var(--accent-secondary)', fontWeight: '700', fontSize: '13px' }} key={i}>
+          {line.replace('###', '').trim()}
+        </h4>
+      );
+    } else if (line.startsWith('##')) {
+      renderedElements.push(
+        <h3 style={{ margin: '22px 0 12px 0', color: '#fff', fontWeight: '700', fontSize: '15px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }} key={i}>
+          {line.replace('##', '').trim()}
+        </h3>
+      );
+    } else if (line.startsWith('#')) {
+      renderedElements.push(
+        <h2 style={{ margin: '24px 0 16px 0', color: '#fff', fontWeight: '800', fontSize: '18px' }} key={i}>
+          {line.replace('#', '').trim()}
+        </h2>
+      );
+    } else if (line.startsWith('-') || line.startsWith('*')) {
+      const content = line.substring(1).trim();
+      renderedElements.push(
+        <li style={{ marginLeft: '16px', marginBottom: '6px', listStyleType: 'disc', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }} key={i}>
+          {parseBoldText(content)}
+        </li>
+      );
+    } else if (/^\d+\./.test(line)) {
+      const content = line.replace(/^\d+\./, '').trim();
+      renderedElements.push(
+        <li style={{ marginLeft: '16px', marginBottom: '6px', listStyleType: 'decimal', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }} key={i}>
+          {parseBoldText(content)}
+        </li>
+      );
+    } else {
+      renderedElements.push(
+        <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }} key={i}>
+          {parseBoldText(line)}
+        </p>
+      );
+    }
+  }
+  
+  return renderedElements;
+}
 
 export default function ResearchWorkspace({ 
   apiKey,
@@ -214,14 +338,14 @@ export default function ResearchWorkspace({
             AI Research Workspace
           </h3>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', margin: '0 0 16px 0', lineHeight: '1.4' }}>
-            Enter a research topic or draft query. The specialized agents will search the database, compile individual paper critiques, and synthesize a complete Literature Review report.
+            Enter a research topic or draft query. The specialized agents will search the database, compile individual paper critiques, and synthesize a complete Phased Research Roadmap.
           </p>
           <form onSubmit={handleRunAgents} style={workspaceLayoutStyles.form}>
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Dexterous robot hand manipulation or continual fine-tuning"
+              placeholder="e.g. Robot arm path planning or reinforcement learning policy"
               className="glass-input"
               style={workspaceLayoutStyles.input}
               disabled={loading}
@@ -312,7 +436,7 @@ export default function ResearchWorkspace({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
             <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Sparkles size={16} style={{ color: 'var(--accent-color)' }} />
-              Synthesized Report (Literature Review)
+              Synthesized Research Roadmap
             </h4>
             {report && (
               <button
@@ -320,18 +444,18 @@ export default function ResearchWorkspace({
                 className="glass-button"
                 style={{ padding: '4px 12px', fontSize: '11px' }}
               >
-                Copy Review
+                Copy Roadmap
               </button>
             )}
           </div>
           <div style={workspaceLayoutStyles.reportContainer}>
             {report ? (
-              <pre style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontFamily: 'var(--font-sans)', whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0, userSelect: 'text' }}>
-                {report}
-              </pre>
+              <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', fontFamily: 'var(--font-sans)', lineHeight: '1.6', margin: 0, userSelect: 'text' }}>
+                {renderMarkdown(report)}
+              </div>
             ) : (
               <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '80px 0', fontSize: '13px' }}>
-                {loading ? 'Synthesizing report, please wait...' : 'The Literature Review will appear here once the agents complete execution.'}
+                {loading ? 'Synthesizing roadmap, please wait...' : 'The Research Roadmap & Timeline will appear here once the agents complete execution.'}
               </div>
             )}
           </div>

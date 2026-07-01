@@ -331,41 +331,64 @@ def synthesize_report_node(state: AgentState) -> Dict[str, Any]:
         
     if api_key:
         prompt = f"""
-You are the Editor-in-Chief compiling an academic Literature Review.
-Synthesize the provided reviews for the research topic: '{query}'.
+Bạn là Trưởng nhóm Nghiên cứu Khoa học (Director of Research). Hãy xây dựng một Lộ trình Nghiên cứu (Research Roadmap) và Kế hoạch Thực nghiệm (Implementation Plan) chi tiết bằng tiếng Việt dựa trên chủ đề nghiên cứu: '{query}' và các phân tích bài báo tham khảo bên dưới.
 
-Your report MUST contain:
-1. Introduction: A formal introduction of the research topic and its significance.
-2. Comparative Matrix: A plain text table comparing the papers (use standard pipes | and hyphens - but do not use bold text). Column headers: | Paper | Methodology Core | Key Benchmark Metrics | Main Vulnerability |
-3. Methodological Conflicts & Synergies: Analyze if there are conflicting assumptions or how these methods can be combined synergistically (e.g. using the framework of Paper A to resolve constraints in Paper B).
-4. Future Research Directions: Three clear research directions.
+Báo cáo lộ trình phải sử dụng định dạng Markdown chuẩn (tiêu đề #, ##, ###, danh sách bullet -, và bảng so sánh) và phải bao gồm đầy đủ các phần sau:
 
-Paper Reviews:
+# Lộ trình Nghiên cứu & Kế hoạch Thực hiện: {query}
+
+## 1. Tổng quan & Mục tiêu Chiến lược
+- Giới thiệu ngắn gọn về tầm quan trọng và bối cảnh khoa học của chủ đề '{query}'.
+- Xác định mục tiêu nghiên cứu cụ thể mà lộ trình này hướng tới.
+
+## 2. Bản đồ Tài liệu Tham khảo (Reference Mapping)
+- Phân tích vai trò đóng góp của các tài liệu tham khảo được cung cấp đối với mục tiêu chung.
+- Xây dựng một bảng so sánh Markdown (Comparative Matrix) gồm các cột: Bài Báo | Phương Pháp Cốt Lõi | Chỉ Số Thực Nghiệm | Điểm Yếu/Hạn Chế. Điền thông tin chính xác từ bài phân tích.
+
+## 3. Kế hoạch Tiếp cận Theo Giai đoạn (Phased Implementation Plan)
+- **Giai đoạn 1: Nền tảng & Tái lập (Foundation & Replication)**: Xác định cụ thể tài liệu nào cần tái lập đầu tiên, cài đặt môi trường gì.
+- **Giai đoạn 2: Tích hợp & Phát triển (Integration & Synergy)**: Mô tả phương án kỹ thuật chi tiết để tích hợp thế mạnh của các bài báo lại với nhau (ví dụ: dùng giải pháp của bài A để khắc phục lỗ hổng của bài B).
+- **Giai đoạn 3: Tối ưu hóa & Đánh giá (Optimization & Evaluation)**: Các chỉ số benchmark cần theo dõi và kế hoạch kiểm thử hiệu năng.
+
+## 4. Kế hoạch Hành động cụ thể (Milestone Schedule)
+- Tạo một bảng Markdown phân chia cụ thể các mốc thời gian hành động theo tuần/tháng (ví dụ: Tuần 1-2, Tuần 3-4,...) kèm mục tiêu cụ thể.
+
+## 5. Rủi ro Kỹ thuật & Phương án Dự phòng
+- Xác định các rủi ro kỹ thuật chính (ví dụ: tràn bộ nhớ GPU, phân rã loss, overfitting) và đề xuất phương án dự phòng (mitigation strategy) tương ứng.
+
+Thông tin phân tích bài báo:
 {critiques_str}
 
-Use strict academic prose and clean text layout. Do not use any markdown formatting characters (like #, ##, *, **, etc.) in the report, use only clean plain text. Write the entire report in Vietnamese. Do not use emojis.
+Hãy viết báo cáo bằng văn phong khoa học, chuyên nghiệp, lập luận logic sâu sắc và hoàn toàn bằng tiếng Việt.
 """
         report = call_gemini(prompt, api_key)
     else:
         # Local Heuristic Comparative Matrix and Synthesis
-        report = f"Literature Review: {query}\n\n"
-        report += "(Local Heuristic Academic Synthesis - Gemini API Key is unconfigured)\n\n"
-        report += "1. Introduction\n"
-        report += f"This survey synthesizes contemporary literature regarding the topic of '{query}'.\n\n"
-        report += "2. Comparative Matrix\n"
-        report += "Paper | Primary Category | Highlighted Contributions | Baseline Match\n"
-        report += "--- | --- | --- | ---\n"
+        report = f"# Lộ trình Nghiên cứu & Kế hoạch Thực hiện: {query}\n\n"
+        report += "*(Lộ trình Khoa học Dự phòng - Gemini/Groq API Key chưa được định cấu hình)*\n\n"
+        report += "## 1. Tổng quan & Mục tiêu Chiến lược\n"
+        report += f"Lộ trình này nhằm mục đích thiết lập một quy trình thực nghiệm toàn diện giải quyết chủ đề '{query}' thông qua việc kết hợp các nghiên cứu tiên tiến nhất.\n\n"
+        report += "## 2. Bản đồ Tài liệu Tham khảo (Reference Mapping)\n"
+        report += "| Bài Báo | Phương Pháp Cốt Lõi | Chỉ Số Thực Nghiệm | Điểm Yếu/Hạn Chế |\n"
+        report += "| --- | --- | --- | --- |\n"
         for r in retrieved:
             p_obj = papers_lookup.get(r["id"], {})
-            report += f"{r['title'][:30]}... | {p_obj.get('primary_category', 'N/A')} | {p_obj.get('highlight', 'N/A')[:40]}... | High\n"
+            report += f"| {r['title'][:30]}... | {p_obj.get('primary_category', 'N/A')} | {p_obj.get('highlight', 'N/A')[:40]}... | Yêu cầu tài nguyên tính toán lớn |\n"
         report += "\n"
-        report += "3. Methodological Conflicts & Synergies\n"
-        report += "- Conflicts: The approaches segment models into distinct manifolds (e.g. localized classification versus structural adapter tuning) which have conflicting constraints on inference latency.\n"
-        report += "- Synergies: The compositional framework of Dexterous Policies can be mapped onto low-rank redundancy adapters, enabling zero-shot model combination without fine-tuning.\n\n"
-        report += "4. Future Research Directions\n"
-        report += "1. Investigate cross-modal feature alignment in real-time robot grasping.\n"
-        report += "2. Analyze the loss convergence behavior under low-rank structural tuning constraints.\n"
-        report += "3. Develop distributed multi-agent systems for real-time literature retrieval."
+        report += "## 3. Kế hoạch Tiếp cận Theo Giai đoạn (Phased Implementation Plan)\n"
+        report += "- **Giai đoạn 1: Nền tảng & Tái lập (Foundation & Replication)**: Cài đặt và thực nghiệm các mã nguồn mở đi kèm của các nghiên cứu để kiểm tra tính đúng đắn.\n"
+        report += "- **Giai đoạn 2: Tích hợp & Phát triển (Integration & Synergy)**: Giải quyết các xung đột đầu vào/đầu ra giữa các mô hình và xây dựng module tích hợp.\n"
+        report += "- **Giai đoạn 3: Tối ưu hóa & Đánh giá (Optimization & Evaluation)**: Tinh chỉnh siêu tham số và đánh giá chéo hiệu năng.\n\n"
+        report += "## 4. Kế hoạch Hành động cụ thể (Milestone Schedule)\n"
+        report += "| Mốc thời gian | Hoạt động chính | Kết quả mong đợi |\n"
+        report += "| --- | --- | --- |\n"
+        report += "| Tuần 1-2 | Cài đặt môi trường ảo và chạy lại mã nguồn các bài báo | Có môi trường làm việc chuẩn hóa |\n"
+        report += "| Tuần 3-4 | Thực thi kiểm thử độc lập cho từng module gốc | Có chỉ số baseline để so sánh |\n"
+        report += "| Tuần 5-8 | Phát triển và liên kết các thành phần mô hình | Bản mẫu tích hợp đầu tiên (MVP) |\n"
+        report += "\n"
+        report += "## 5. Rủi ro Kỹ thuật & Phương án Dự phòng\n"
+        report += "- **Rủi ro 1**: Quá tải bộ nhớ GPU khi huấn luyện mô hình tích hợp. *Dự phòng*: Áp dụng tinh chỉnh hiệu quả tham số (LoRA, QLoRA) hoặc giảm kích thước batch.\n"
+        report += "- **Rủi ro 2**: Sai lệch phân phối dữ liệu thực tế (Domain shift). *Dự phòng*: Áp dụng kỹ thuật Domain Adaptation hoặc huấn luyện tăng cường dữ liệu."
         
     logs.append({
         "agent": "LiteratureReviewAgent",

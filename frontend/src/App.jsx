@@ -420,13 +420,13 @@ export default function App() {
                         fontSize: '13px',
                         lineHeight: '1.4',
                         textAlign: 'left',
-                        whiteSpace: 'pre-wrap',
+                        whiteSpace: msg.sender === 'user' ? 'pre-wrap' : 'normal',
                         background: msg.sender === 'user' ? 'var(--accent-color)' : 'rgba(255,255,255,0.05)',
                         color: msg.sender === 'user' ? '#fff' : 'var(--text-secondary)',
                         border: msg.sender === 'user' ? 'none' : '1px solid rgba(255,255,255,0.02)'
                       }}
                     >
-                      {msg.text}
+                      {msg.sender === 'user' ? msg.text : renderChatText(msg.text)}
                     </div>
                   ))}
                   {chatLoading && (
@@ -479,4 +479,38 @@ export default function App() {
       )}
     </div>
   );
+}
+
+// Simple bold parser helper
+function parseBoldText(text) {
+  if (!text) return "";
+  const parts = text.split(/\*\*([^*]+)\*\*/g);
+  return parts.map((part, index) => {
+    return index % 2 === 1 ? <strong style={{ color: '#fff', fontWeight: '600' }} key={index}>{part}</strong> : part;
+  });
+}
+
+// Simple chat message line splitter helper
+function renderChatText(text) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return lines.map((line, lIdx) => {
+    let content = line.trim();
+    if (!content) return <div key={lIdx} style={{ height: '4px' }} />;
+    
+    if (content.startsWith('-') || content.startsWith('*')) {
+      const bulletContent = content.substring(1).trim();
+      return (
+        <div key={lIdx} style={{ marginLeft: '8px', display: 'flex', gap: '6px', marginBottom: '4px', fontSize: '13px', lineHeight: '1.4' }}>
+          <span style={{ color: 'var(--accent-color)' }}>•</span>
+          <span>{parseBoldText(bulletContent)}</span>
+        </div>
+      );
+    }
+    return (
+      <p key={lIdx} style={{ margin: '0 0 6px 0', fontSize: '13px', lineHeight: '1.4' }}>
+        {parseBoldText(content)}
+      </p>
+    );
+  });
 }

@@ -58,7 +58,6 @@ def explain_recommendation_llm(user_interests, paper_title, paper_abstract, cate
     """
     Calls Google Gemini or Groq Llama API to get structured JSON recommendations explanation.
     """
-    # Build prompt
     prompt = f"""
 You are an expert scientific paper recommendation assistant for researchers.
 The user has expressed strong interest in these papers they upvoted:
@@ -70,8 +69,8 @@ Category: {category_name}
 Abstract: {paper_abstract}
 
 Your tasks:
-1. "explanation": Write a 1-sentence personalized explanation (in Vietnamese) detailing why this paper matches their upvoted interest profile. Be specific about methodologies or concepts. Do not use any markdown formatting characters (like *, **, #) in the explanation string.
-2. "tailored_summary": Write a 2-sentence summary (in Vietnamese) of this paper tailored to their background, highlighting details they would find most interesting based on their upvotes. Do not use any markdown formatting characters (like *, **, #) in the summary string.
+1. "explanation": Write a detailed, personalized explanation (in Vietnamese, 2-3 sentences) detailing why this paper matches their upvoted interest profile. Be specific about common concepts, models, or datasets. Do not use any markdown formatting characters (like *, **, #) in the explanation string.
+2. "tailored_summary": Write a detailed tailored summary (in Vietnamese, 3-4 sentences) of this paper tailored to their background, highlighting the most advanced methodologies, dataset scale, or key metrics of this paper that directly align with their research interests. Do not use any markdown formatting characters (like *, **, #) in the summary string.
 
 You must respond in strict JSON format matching the schema. Do not write markdown blocks or HTML.
 """
@@ -214,10 +213,14 @@ def answer_pdf_question(chunks, question, api_key):
         snippets += f"\nSnippet {i+1} (Page {c['page_idx']}):\n{c['text']}\n"
         
     prompt = f"""
-You are an expert scientific research assistant.
-Answer the user's question about the paper based ONLY on the provided context snippets extracted from the paper's PDF.
-Keep your response concise, factual, and professional. Do not use any markdown formatting characters (like *, **, #, etc.) in your response. Write only in clean plain text with regular paragraphs or clean bullet points (using standard hyphen - without stars).
-If the context snippets do not contain enough information to answer the question, state that clearly.
+Bạn là một trợ lý nghiên cứu khoa học chuyên nghiệp.
+Hãy trả lời câu hỏi của người dùng về bài báo khoa học dựa trên các đoạn văn bản trích dẫn (Context Snippets) từ file PDF của bài báo.
+
+Yêu cầu trả lời:
+1. Trực quan và dễ đọc: Bạn ĐƯỢC PHÉP sử dụng các định dạng markdown như in đậm (**) hoặc danh sách đầu dòng (-) để làm nổi bật từ khóa chính, giải pháp và phương pháp.
+2. Căn cứ khoa học: Hãy nêu rõ thông tin được trích xuất từ trang nào của bài báo (ví dụ: [Trang X]) dựa trên thông tin "Page X" ở các snippet.
+3. Chi tiết và khoa học: Không trả lời chung chung. Hãy giải thích chi tiết cơ chế hoạt động, số liệu thực nghiệm, hoặc hạn chế được nêu trong tài liệu.
+4. Nếu thông tin trong các snippet không đủ để trả lời câu hỏi, hãy thẳng thắn nêu rõ điều đó.
 
 Context Snippets:
 {snippets}
