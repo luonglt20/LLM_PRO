@@ -39,7 +39,7 @@ graph TD
 ## 2. Cấu trúc thư mục (Project Structure)
 
 ```text
-/Users/toilaluongg/Desktop/UIT -SDH/LLM
+/LLM_PRO
 ├── Dockerfile                  # Chỉ thị Docker build cho React Frontend
 ├── README.md                   # Tài liệu hướng dẫn khởi chạy nhanh
 ├── TECHNICAL.md                # Tài liệu chi tiết kiến trúc & toán học (Tệp này)
