@@ -576,7 +576,8 @@ def agent_chat():
         output = run_agent_workflow(query, api_key)
         return jsonify({
             "report": output.get("final_report", ""),
-            "logs": output.get("agent_logs", [])
+            "logs": output.get("agent_logs", []),
+            "papers": output.get("papers", [])
         })
     except Exception as e:
         print(f"Error running agent workflow: {e}")

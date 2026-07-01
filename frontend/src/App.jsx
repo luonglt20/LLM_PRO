@@ -351,6 +351,11 @@ export default function App() {
             {activeTab === 'workspace' && (
               <ResearchWorkspace 
                 apiKey={geminiApiKey}
+                onViewPdf={setActivePdfPaper}
+                ratings={ratings}
+                onRate={handleRatePaper}
+                onBookmark={(pid) => handleManageCollection(collections['My Library']?.includes(pid) ? 'remove' : 'add', 'My Library', pid)}
+                bookmarkedIds={collections['My Library'] || []}
               />
             )}
           </>

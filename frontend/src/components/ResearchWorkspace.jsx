@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BookOpen, Bookmark, ThumbsUp, ThumbsDown, Sparkles, BrainCircuit } from 'lucide-react';
 
 const workspaceLayoutStyles = {
   container: {
@@ -28,7 +29,8 @@ const workspaceLayoutStyles = {
     gap: '24px',
     height: '100%',
     boxSizing: 'border-box',
-    overflow: 'hidden'
+    overflowY: 'auto',
+    paddingRight: '8px'
   },
   inputCard: {
     display: 'flex',
@@ -65,7 +67,8 @@ const workspaceLayoutStyles = {
     flexDirection: 'column',
     boxSizing: 'border-box',
     overflow: 'hidden',
-    padding: '24px'
+    padding: '24px',
+    minHeight: '400px'
   },
   logsContainer: {
     flex: '1',
@@ -84,11 +87,19 @@ const workspaceLayoutStyles = {
   }
 };
 
-export default function ResearchWorkspace({ apiKey }) {
+export default function ResearchWorkspace({ 
+  apiKey,
+  onViewPdf,
+  ratings,
+  onRate,
+  onBookmark,
+  bookmarkedIds
+}) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [report, setReport] = useState('');
+  const [matchedPapers, setMatchedPapers] = useState([]);
   const [error, setError] = useState('');
 
   const handleRunAgents = async (e) => {
@@ -99,6 +110,7 @@ export default function ResearchWorkspace({ apiKey }) {
     setError('');
     setLogs([]);
     setReport('');
+    setMatchedPapers([]);
 
     // Add initial log
     setLogs([
@@ -119,6 +131,7 @@ export default function ResearchWorkspace({ apiKey }) {
       const data = await res.json();
       setLogs(data.logs || []);
       setReport(data.report || '');
+      setMatchedPapers(data.papers || []);
     } catch (err) {
       setError(err.message || 'An error occurred during agent execution.');
       setLogs(prev => [
@@ -140,7 +153,8 @@ export default function ResearchWorkspace({ apiKey }) {
     <div style={workspaceLayoutStyles.container}>
       {/* Left Panel: Agent Log Console */}
       <div className="glass-panel" style={workspaceLayoutStyles.leftPanel}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#fff', margin: '0 0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#fff', margin: '0 0 16px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <BrainCircuit size={18} style={{ color: 'var(--accent-color)' }} />
           Agent Execution Monitor
         </h3>
         <div style={workspaceLayoutStyles.logsContainer}>
@@ -192,7 +206,7 @@ export default function ResearchWorkspace({ apiKey }) {
         </div>
       </div>
 
-      {/* Right Panels: Query Input and Report Draft */}
+      {/* Right Panels: Query Input, Source Papers, and Report Draft */}
       <div style={workspaceLayoutStyles.rightColumn}>
         {/* Query Input Card */}
         <div className="glass-panel" style={workspaceLayoutStyles.inputCard}>
@@ -227,10 +241,77 @@ export default function ResearchWorkspace({ apiKey }) {
           )}
         </div>
 
+        {/* Matched Source Papers Card */}
+        {matchedPapers.length > 0 && (
+          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 'bold', color: 'var(--accent-color)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={16} />
+              Reviewed Source Papers ({matchedPapers.length})
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              {matchedPapers.map(paper => {
+                const isBookmarked = bookmarkedIds.includes(paper.id);
+                const currentRating = ratings[paper.id] || 0;
+                
+                return (
+                  <div 
+                    key={paper.id} 
+                    className="glass-panel" 
+                    style={{ 
+                      padding: '16px', 
+                      background: 'rgba(255,255,255,0.01)', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}
+                  >
+                    <div>
+                      <h5 style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#fff', fontWeight: '600', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={paper.title}>
+                        {paper.title}
+                      </h5>
+                      <span className="tag category" style={{ fontSize: '10px' }}>{paper.category_name}</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: 'auto' }}>
+                      <button 
+                        className="glass-button"
+                        style={{ fontSize: '11px', padding: '6px 12px', flex: 1, justifyContent: 'center' }}
+                        onClick={() => onViewPdf(paper)}
+                      >
+                        <BookOpen size={13} style={{ marginRight: '4px' }} /> View PDF & AI Chat
+                      </button>
+                      
+                      <button 
+                        className={`action-btn ${isBookmarked ? 'bookmarked' : ''}`}
+                        style={{ width: '32px', height: '32px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', background: isBookmarked ? 'rgba(139,92,246,0.2)' : 'transparent', color: isBookmarked ? '#a78bfa' : 'var(--text-secondary)' }}
+                        onClick={() => onBookmark(paper.id)}
+                        title="Add to Library"
+                      >
+                        <Bookmark size={13} />
+                      </button>
+                      
+                      <button 
+                        className={`action-btn upvote ${currentRating === 1 ? 'upvoted' : ''}`}
+                        onClick={() => onRate(paper.id, currentRating === 1 ? 0 : 1)}
+                        style={{ width: '32px', height: '32px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', background: currentRating === 1 ? 'rgba(52,211,153,0.2)' : 'transparent', color: currentRating === 1 ? '#34d399' : 'var(--text-secondary)' }}
+                        title="Upvote paper category"
+                      >
+                        <ThumbsUp size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Generated Report Card */}
         <div className="glass-panel" style={workspaceLayoutStyles.reportCard}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff', margin: 0 }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sparkles size={16} style={{ color: 'var(--accent-color)' }} />
               Synthesized Report (Literature Review)
             </h4>
             {report && (
